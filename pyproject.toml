@@ -6,7 +6,11 @@ authors = ["Natacha, Galmiche <natacha.galmiche@uib.no>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = ">=3.8,<3.9"
+persigraph = {git = "https://github.com/nglm/persigraph.git"}
+pycvi = {git = "https://github.com/nglm/pycvi.git"}
+pandas = "^2.0.3"
+jupyter = "^1.0.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
