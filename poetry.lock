@@ -2070,7 +2070,7 @@ tslearn = "^0.6.2"
 type = "git"
 url = "https://github.com/nglm/pycvi.git"
 reference = "HEAD"
-resolved_reference = "526de747694b289a95d254f1dc8313e51cde5d2a"
+resolved_reference = "be66a3899f396937ccec9291b803e51980f2e084"
 
 [[package]]
 name = "pygments"
