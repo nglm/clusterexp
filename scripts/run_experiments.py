@@ -43,7 +43,7 @@ UNLABELED = [
 UNKNOWN_K = [
     "birch-rg3.arff",
     "mopsi-finland.arff", "mopsi-joensuu.arff",
-    "s-set3.arff", "s-set3.arff",
+    "s-set3.arff", "s-set4.arff",
 ]
 
 def arff_from_github(url):
@@ -63,26 +63,19 @@ def load_data_from_github(url, with_labels=True):
         labels = None
     return data, labels, meta
 
-def plot_clusters(data, clusterings, titles):
+def plot_clusters(data, clusterings, fig, titles):
     # Some datasets are in 3D
     (N, d) = data.shape
-    if d <= 2:
-        fig, axes = plt.subplots(
-            nrows=2, ncols=4, sharex=True, sharey=True, figsize=(15,10),
-            tight_layout=True
-        )
-    elif d == 3:
-        fig = plt.figure(figsize=(15,10), tight_layout=True)
     # Plot the clustering selected by a given score
     for i in range(len(clusterings)):
         # Plot clusters one by one
         if d <= 2:
-            ax = axes.flat[i]
+            ax = fig.axes[i+2] # i+2 because there are 2 plots already
         elif d == 3:
-            ax = fig.add_subplot(2, 4, i+1, projection='3d')
+            ax = fig.add_subplot(2, 5, i+3, projection='3d')
         for i_label, cluster in enumerate(clusterings[i]):
             if d == 1:
-                ax.scatter(np.zeros(N), data[cluster, 0], s=1)
+                ax.scatter(np.zeros_like(data[cluster, 0]), data[cluster, 0], s=1)
             elif d == 2:
                 ax.scatter(data[cluster, 0], data[cluster, 1], s=1)
             elif d == 3:
@@ -92,15 +85,74 @@ def plot_clusters(data, clusterings, titles):
         ax.set_title(str(titles[i]))
     return fig
 
+def plot_true(data, labels, clusterings):
+    # Some datasets are in 3D
+    (N, d) = data.shape
+
+    # ----------------------- Create figure ----------------
+    if d <= 2:
+        fig, axes = plt.subplots(
+            nrows=2, ncols=5, sharex=True, sharey=True, figsize=(20,10),
+            tight_layout=True
+        )
+    elif d == 3:
+        fig = plt.figure(figsize=(20,10), tight_layout=True)
+
+    # ----------------------- Labels ----------------
+    if labels is None:
+        labels = np.zeros(N)
+    classes = np.unique(labels)
+    n_labels = len(classes)
+    if n_labels == N:
+        labels = np.zeros(N)
+        n_labels = 1
+
+    # ------------------- variables for the 2 axes ----------------
+    clusters = [
+        [labels == classes[i] for i in range(n_labels)],
+        clusterings[n_labels]
+    ]
+    ax_titles = [
+        "True labels, k={}".format(n_labels),
+        "Clustering assuming k={}".format(n_labels),
+    ]
+
+    # ------ True clustering and clustering assuming n_labels ----------
+    for i_ax in range(2):
+        if d <= 2:
+            ax = fig.axes[i_ax]
+        elif d == 3:
+            ax = fig.add_subplot(2, 5, i_ax+1, projection='3d')
+
+        # Plot clusters one by one
+        for i in range(n_labels):
+
+            c = clusters[i_ax][i]
+            if d == 1:
+                ax.scatter(
+                    np.zeros_like(data[c, 0]), data[c, 0], s=1
+                )
+            elif d == 2:
+                ax.scatter(data[c, 0], data[c, 1], s=1)
+            elif d == 3:
+                ax.scatter(
+                    data[c, 0], data[c, 1], data[c, 2], s=1
+                )
+        ax.set_title(ax_titles[i_ax])
+
+    return fig
+
 def experiment(
     X,
+    y,
     model_class = AgglomerativeClustering,
-    n_clusters_range = [i for i in range(15)],
+    n_clusters_range = [i for i in range(25)],
     model_kw = {},
 ):
 
     exp = {}
     clusterings_selected = []
+    ax_titles = []
 
     N = len(X)
     if N > 10000:
@@ -118,6 +170,7 @@ def experiment(
 
         # store clustering information
         exp["clusterings"] = clusterings[0]
+        fig = plot_true(X, y, clusterings[0])
 
         for s in SCORES:
             score = s()
@@ -149,7 +202,9 @@ def experiment(
                 "time" : dt,
             }
 
-    fig = plot_clusters(X, clusterings_selected, SCORES)
+            ax_titles.append("{}, k={}".format(score, k_selected))
+
+    fig = plot_clusters(X, clusterings_selected, fig, ax_titles)
 
     return exp, fig
 
@@ -168,8 +223,9 @@ def main():
     all_datasets = raw_text.split("\n")
 
     l_data = []
+    l_labels = []
     l_n_labels = []
-    l_fname = all_datasets
+    l_fname = [f for f in all_datasets if f not in UNKNOWN_K]
     for fname in l_fname:
         if fname in UNLABELED:
             with_labels = False
@@ -186,13 +242,15 @@ def main():
             n_labels = len(np.unique(labels))
             if n_labels == len(data):
                 n_labels = 1
-        l_data.append(data)
-        l_n_labels.append(n_labels)
-        print(
-            "Dataset: {}  | Shape: {}  | #labels: {}".format(
-                fname, data.shape, n_labels
+        if len(data) <= 10000 and n_labels <= 20:
+            l_data.append(data)
+            l_labels.append(labels)
+            l_n_labels.append(n_labels)
+            print(
+                "Dataset: {}  | Shape: {}  | #labels: {}".format(
+                    fname, data.shape, n_labels
+                )
             )
-        )
 
     # ------ Run experiments for all datasets and all scores -----------
     model_classes = [
@@ -200,23 +258,23 @@ def main():
         SpectralClustering,
         ]
     model_names = [
-        "AgglomerativeClustering-Ward", "AgglomerativeClustering-Single",
+        "AgglomerativeClustering-Single", "AgglomerativeClustering-Ward",
         "SpectralClustering",
     ]
     model_kws = [
-        {"linkage" : "ward"}, {"linkage" : "single"},
+        {"linkage" : "single"}, {"linkage" : "ward"},
         {},
     ]
     for i_model, model_class in enumerate(model_classes):
         model_name = model_names[i_model]
         model_kw = model_kws[i_model]
 
-        for i, X in enumerate(l_data):
+        for i, (X, y) in enumerate(zip(l_data, l_labels)):
 
             print(" ---------------- DATASET {} ---------------- ".format(l_fname[i]))
             print(" --------------------- True k: {} --------------------- ".format(l_n_labels[i]))
             exp, fig = experiment(
-                X,
+                X, y,
                 model_class=model_class,
                 model_kw=model_kw,
             )
@@ -229,7 +287,8 @@ def main():
             exp_fname = "{}{}_{}_{}".format(
                 path_saved, today, model_name, l_fname[i]
             )
-            figtitle = "{} - {}".format(l_fname[i], model_name)
+            figtitle = "{} - {} - True k={}".format(
+                l_fname[i], model_name, l_n_labels[i])
             fig.suptitle(figtitle)
             fig.savefig(exp_fname + ".png")
             json_str = json.dumps(exp, indent=2)
