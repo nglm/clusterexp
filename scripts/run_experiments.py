@@ -10,12 +10,15 @@ import io
 import urllib.request
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
+from sklearn_extra.cluster import KMedoids
+from sklearn_extra.robust import RobustWeightedKMeans
 from datetime import date
 import sys
 import json
 import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+from math import ceil, floor
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.scores import Inertia, GapStatistic, ScoreFunction, Hartigan, Diameter, CalinskiHarabasz, Silhouette, SCORES
@@ -46,6 +49,14 @@ UNKNOWN_K = [
     "s-set3.arff", "s-set4.arff",
 ]
 
+N_SCORES = 0
+for s in SCORES:
+    for score_type in s.score_types:
+        N_SCORES += 1
+N_ROWS = ceil(N_SCORES / 5)
+N_COLS = 5
+FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
+
 def arff_from_github(url):
     ftpstream = urllib.request.urlopen(url)
     data, meta = arff.loadarff(io.StringIO(ftpstream.read().decode('utf-8')))
@@ -72,7 +83,7 @@ def plot_clusters(data, clusterings, fig, titles):
         if d <= 2:
             ax = fig.axes[i+2] # i+2 because there are 2 plots already
         elif d == 3:
-            ax = fig.add_subplot(2, 5, i+3, projection='3d')
+            ax = fig.add_subplot(N_ROWS, N_COLS, i+3, projection='3d')
         for i_label, cluster in enumerate(clusterings[i]):
             if d == 1:
                 ax.scatter(np.zeros_like(data[cluster, 0]), data[cluster, 0], s=1)
@@ -92,7 +103,7 @@ def plot_true(data, labels, clusterings):
     # ----------------------- Create figure ----------------
     if d <= 2:
         fig, axes = plt.subplots(
-            nrows=2, ncols=5, sharex=True, sharey=True, figsize=(20,10),
+            nrows=N_ROWS, ncols=N_COLS, sharex=True, sharey=True, figsize=(20,10),
             tight_layout=True
         )
     elif d == 3:
@@ -122,7 +133,7 @@ def plot_true(data, labels, clusterings):
         if d <= 2:
             ax = fig.axes[i_ax]
         elif d == 3:
-            ax = fig.add_subplot(2, 5, i_ax+1, projection='3d')
+            ax = fig.add_subplot(N_ROWS, N_COLS, i_ax+1, projection='3d')
 
         # Plot clusters one by one
         for i in range(n_labels):
@@ -173,36 +184,37 @@ def experiment(
         fig = plot_true(X, y, clusterings[0])
 
         for s in SCORES:
-            score = s()
-            print(" ================ {} ================ ".format(str(score)))
-            t_start = time.time()
+            for score_type in s.score_types:
+                score = s(score_type=score_type)
+                print(" ================ {} ================ ".format(score))
+                t_start = time.time()
 
-            scores = compute_all_scores(
-                score,
-                X,
-                clusterings,
-                DTW=False,
-                scaler=StandardScaler(),
-            )
+                scores = compute_all_scores(
+                    score,
+                    X,
+                    clusterings,
+                    DTW=False,
+                    scaler=StandardScaler(),
+                )
 
-            k_selected = score.select(scores)[0]
-            clusterings_selected.append(clusterings[0][k_selected])
-            t_end = time.time()
-            dt = t_end - t_start
+                k_selected = score.select(scores)[0]
+                clusterings_selected.append(clusterings[0][k_selected])
+                t_end = time.time()
+                dt = t_end - t_start
 
-            # Print and store score information
-            for k in n_clusters_range:
-                print(k, scores[0][k])
-            print("Selected k {}".format(k_selected))
-            print('Code executed in %.2f s' %(dt))
+                # Print and store score information
+                for k in n_clusters_range:
+                    print(k, scores[0][k])
+                print("Selected k {}".format(k_selected))
+                print('Code executed in %.2f s' %(dt))
 
-            exp[str(s)] = {
-                "scores" : scores[0],
-                "selected" : k_selected,
-                "time" : dt,
-            }
+                exp[str(s)] = {
+                    "scores" : scores[0],
+                    "selected" : k_selected,
+                    "time" : dt,
+                }
 
-            ax_titles.append("{}, k={}".format(score, k_selected))
+                ax_titles.append("{}, k={}".format(score, k_selected))
 
     fig = plot_clusters(X, clusterings_selected, fig, ax_titles)
 
@@ -253,18 +265,39 @@ def main():
             )
 
     # ------ Run experiments for all datasets and all scores -----------
+    # model_classes = [
+    #     AgglomerativeClustering, AgglomerativeClustering,
+    #     SpectralClustering,
+    #     ]
+    # model_names = [
+    #     "AgglomerativeClustering-Single", "AgglomerativeClustering-Ward",
+    #     "SpectralClustering",
+    # ]
+    # model_kws = [
+    #     {"linkage" : "single"}, {"linkage" : "ward"},
+    #     {},
+    # ]
+
     model_classes = [
-        AgglomerativeClustering, AgglomerativeClustering,
-        SpectralClustering,
+        SpectralClustering, KMeans
         ]
     model_names = [
-        "AgglomerativeClustering-Single", "AgglomerativeClustering-Ward",
-        "SpectralClustering",
+        "SpectralClustering", "KMeans"
     ]
     model_kws = [
-        {"linkage" : "single"}, {"linkage" : "ward"},
-        {},
+        {}, {},
     ]
+
+    # model_classes = [
+    #     KMedoids, RobustWeightedKMeans
+    #     ]
+    # model_names = [
+    #     "KMedoids", "RobustWeightedKMeans"
+    # ]
+    # model_kws = [
+    #     {}, {},
+    # ]
+
     for i_model, model_class in enumerate(model_classes):
         model_name = model_names[i_model]
         model_kw = model_kws[i_model]
