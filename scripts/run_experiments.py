@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 
-# Courtesy to https://github.com/deric/clustering-benchmark
-
-from scipy.io import arff
 import numpy as np
-import pandas as pd
 import requests
-import io
-import urllib.request
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
-from sklearn_extra.robust import RobustWeightedKMeans
 from datetime import date
 import sys
 import json
@@ -21,8 +14,11 @@ from mpl_toolkits.mplot3d import Axes3D
 from math import ceil, floor
 
 from pycvi.cluster import generate_all_clusterings
-from pycvi.scores import Inertia, GapStatistic, ScoreFunction, Hartigan, Diameter, CalinskiHarabasz, Silhouette, SCORES
+from pycvi.scores import SCORES
 from pycvi.compute_scores import compute_all_scores
+
+from clusterexp.utils import get_data_labels
+
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -56,23 +52,6 @@ for s in SCORES:
 N_ROWS = ceil(N_SCORES / 5)
 N_COLS = 5
 FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
-
-def arff_from_github(url):
-    ftpstream = urllib.request.urlopen(url)
-    data, meta = arff.loadarff(io.StringIO(ftpstream.read().decode('utf-8')))
-    return data, meta
-
-def load_data_from_github(url, with_labels=True):
-    data, meta = arff_from_github(url)
-    df = pd.DataFrame(data)
-    # Get only data, not the labels and convert to numpy
-    if with_labels:
-        data = df.iloc[:, 0:-1].to_numpy()
-        labels = df.iloc[:, -1].to_numpy()
-    else:
-        data = df.to_numpy()
-        labels = None
-    return data, labels, meta
 
 def plot_clusters(data, clusterings, fig, titles):
     # Some datasets are in 3D
@@ -221,6 +200,12 @@ def experiment(
     return exp, fig
 
 def main():
+    """
+    Compute and store clusterings, figures and scores for all datasets
+    for a given set of clustering methods.
+    """
+
+    np.random.seed(221)
 
     # -------------- Redirect output --------------
     today = str(date.today())
@@ -239,22 +224,9 @@ def main():
     l_n_labels = []
     l_fname = [f for f in all_datasets if f not in UNKNOWN_K]
     for fname in l_fname:
-        if fname in UNLABELED:
-            with_labels = False
-            if fname in UNIMODAL:
-                n_labels = 1
-            else:
-                n_labels = None
-        else:
-            with_labels = True
-        data, labels, meta = load_data_from_github(
-            PATH + fname, with_labels=with_labels
-        )
-        if with_labels:
-            n_labels = len(np.unique(labels))
-            if n_labels == len(data):
-                n_labels = 1
-        if len(data) <= 10000 and n_labels <= 20:
+        data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
+        N = len(data)
+        if N <= 10000 and n_labels <= 20:
             l_data.append(data)
             l_labels.append(labels)
             l_n_labels.append(n_labels)
@@ -278,25 +250,25 @@ def main():
     #     {},
     # ]
 
-    model_classes = [
-        SpectralClustering, KMeans
-        ]
-    model_names = [
-        "SpectralClustering", "KMeans"
-    ]
-    model_kws = [
-        {}, {},
-    ]
-
     # model_classes = [
-    #     KMedoids, RobustWeightedKMeans
+    #     SpectralClustering, KMeans
     #     ]
     # model_names = [
-    #     "KMedoids", "RobustWeightedKMeans"
+    #     "SpectralClustering", "KMeans"
     # ]
     # model_kws = [
     #     {}, {},
     # ]
+
+    model_classes = [
+        KMedoids,
+        ]
+    model_names = [
+        "KMedoids",
+    ]
+    model_kws = [
+        {},
+    ]
 
     for i_model, model_class in enumerate(model_classes):
         model_name = model_names[i_model]
@@ -314,6 +286,7 @@ def main():
             exp["dataset"] = l_fname[i]
             exp["k"] = l_n_labels[i]
             exp["model"] = model_name
+            exp["model_kw"] = model_kw
 
             # save experiment information as json
             path_saved = "./res/"
