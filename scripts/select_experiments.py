@@ -22,7 +22,9 @@ def main():
     """
 
     # List of directories, corresponding to clustering methods
-    list_dirs = [dname.strip() for dname in next(os.walk(RES_DIR))[1] if dname != "Selected"]
+    list_dirs = [
+        dname.strip() for dname in next(os.walk(RES_DIR))[1]
+        if dname not in  ["Selected", "KMedoids"]]
     with open(RES_DIR + FNAME_DATASET_EXPS) as f:
         datasets = f.read().splitlines()
 
@@ -59,8 +61,8 @@ def main():
             # all clusterings of this experiment
             clusterings = exp['clusterings']
 
-            # best clusters
-            best_clusters = clusterings[n_labels]
+            # best clusters (keys become string when saved/loaded)
+            best_clusters = clusterings[str(n_labels)]
 
             # Compute VI between the true clustering and each clustering
             # obtained with the different clustering method with the
@@ -71,8 +73,8 @@ def main():
         # the experiment file and the figures to another folder
         argbest = np.argmin(VIs)
         fname = fnames[argbest]
-        shutil.copy(fname + ".json", SELECTED_DIR)
-        shutil.copy(fname + ".png", SELECTED_DIR)
+        shutil.copy(RES_DIR + fname + ".json", SELECTED_DIR)
+        shutil.copy(RES_DIR + fname + ".png", SELECTED_DIR)
 
 if __name__ == "__main__":
     main()

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 import numpy as np
-import requests
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
@@ -24,19 +23,8 @@ warnings.filterwarnings("ignore")
 
 URL_ROOT = 'https://raw.githubusercontent.com/nglm/clustering-benchmark/master/src/main/resources/datasets/'
 PATH = URL_ROOT + "artificial/"
-
-# Just one cluster
-UNIMODAL = [
-    "birch-rg1.arff", "birch-rg2.arff",
-    "golfball.arff",
-]
-# No class column in the data
-UNLABELED = [
-    "birch-rg1.arff", "birch-rg2.arff",
-    "birch-rg3.arff",
-    "mopsi-finland.arff", "mopsi-joensuu.arff",
-    "s-set3.arff", "s-set3.arff",
-]
+RES_DIR = './res/'
+FNAME_DATASET_EXPS = "datasets_experiments.txt"
 
 # Unknown number of clusters
 UNKNOWN_K = [
@@ -49,6 +37,7 @@ N_SCORES = 0
 for s in SCORES:
     for score_type in s.score_types:
         N_SCORES += 1
+
 N_ROWS = ceil(N_SCORES / 5)
 N_COLS = 5
 FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
@@ -215,15 +204,15 @@ def main():
     sys.stdout = fout
 
     # --------- Get datasets and labels -----------
-    fname_summary = URL_ROOT + "artificial.txt"
-    raw_text = requests.get(fname_summary).text
-    all_datasets = raw_text.split("\n")
+    with open(RES_DIR + FNAME_DATASET_EXPS) as f:
+        all_datasets = f.read().splitlines()
 
     l_data = []
     l_labels = []
     l_n_labels = []
     l_fname = [f for f in all_datasets if f not in UNKNOWN_K]
     for fname in l_fname:
+        print(fname, flush=True)
         data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
         N = len(data)
         if N <= 10000 and n_labels <= 20:
@@ -289,9 +278,8 @@ def main():
             exp["model_kw"] = model_kw
 
             # save experiment information as json
-            path_saved = "./res/"
             exp_fname = "{}{}_{}_{}".format(
-                path_saved, today, model_name, l_fname[i]
+                RES_DIR, today, model_name, l_fname[i]
             )
             figtitle = "{} - {} - True k={}".format(
                 l_fname[i], model_name, l_n_labels[i])

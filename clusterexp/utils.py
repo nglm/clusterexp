@@ -27,9 +27,15 @@ UNKNOWN_K = [
     "s-set3.arff", "s-set4.arff",
 ]
 
-def arff_from_github(url):
-    ftpstream = urllib.request.urlopen(url)
-    data, meta = arff.loadarff(io.StringIO(ftpstream.read().decode('utf-8')))
+def arff_from_github(url, verbose=False):
+    try:
+        with urllib.request.urlopen(url, timeout=1) as response:
+            if verbose:
+                print(response.status, flush=True)
+            arff_data = io.StringIO(response.read().decode('utf-8'))
+            data, meta = arff.loadarff(arff_data)
+    except Exception as ex:
+        print(ex, flush=True)
     return data, meta
 
 def load_data_from_github(url, with_labels=True):
