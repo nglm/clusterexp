@@ -4,6 +4,8 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
+from tslearn.clustering import TimeSeriesKMeans
+from tslearn.metrics import cdist_soft_dtw_normalized
 from datetime import date
 import sys, os
 import time
@@ -12,20 +14,27 @@ from mpl_toolkits.mplot3d import Axes3D
 
 from pycvi.cluster import generate_all_clusterings
 
-from clusterexp.utils import get_data_labels, UNKNOWN_K, URL_ROOT
+from clusterexp.utils import (
+    get_data_labels, write_list_datasets, UNKNOWN_K, INVALID, URL_ROOT,
+)
 
 import warnings
 warnings.filterwarnings("ignore")
 
 DATA_SOURCE = "artificial"
 DATA_SOURCE = "real-world"
+#DATA_SOURCE = "UCR"
 
 RES_DIR = f'./res/{DATA_SOURCE}/'
 
 PATH = f"{URL_ROOT}{DATA_SOURCE}/"
 FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
+FNAME_DATASET_ALL = f"all-datasets-{DATA_SOURCE}.txt"
 
 SEED = 221
+
+METRIC = "euclidean"
+DTW_METRIC = lambda c1, c2 : cdist_soft_dtw_normalized(c1, c2, gamma=1)
 
 def experiment(
     X,
@@ -44,11 +53,13 @@ def experiment(
 
         t_start = time.time()
 
+        DTW = DATA_SOURCE == "UCR"
+
         clusterings = generate_all_clusterings(
                 X,
                 model_class,
                 n_clusters_range,
-                DTW=False,
+                DTW=DTW,
                 scaler=scaler,
                 model_kw=model_kw,
             )
@@ -80,14 +91,18 @@ def main():
     sys.stdout = fout
 
     # --------- Get datasets and labels -----------
-    with open(RES_DIR + FNAME_DATASET_EXPS) as f:
+    with open(RES_DIR + FNAME_DATASET_ALL) as f:
         all_datasets = f.read().splitlines()
 
     l_data = []
     l_labels = []
     l_n_labels = []
     l_fname = []
-    l_fname_all = [f for f in all_datasets if f not in UNKNOWN_K]
+    # Keep only datasets with known K and no missing values
+    l_fname_all = [
+        f for f in all_datasets
+        if f not in UNKNOWN_K + INVALID
+    ]
     for fname in l_fname_all:
         #print(fname, flush=True)
         data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
@@ -102,6 +117,8 @@ def main():
                     fname, data.shape, n_labels
                 ), flush=True
             )
+    # Write dataset list that is kept in the end
+    write_list_datasets(RES_DIR + FNAME_DATASET_EXPS, l_fname)
 
     # ------ Run experiments for all datasets and all scores -----------
     scaler = StandardScaler()
@@ -113,26 +130,34 @@ def main():
     #     "AgglomerativeClustering-Single", "AgglomerativeClustering-Ward",
     # ]
     # model_kws = [
-    #     {"linkage" : "single"}, {"linkage" : "ward"},
+    #     {"linkage" : "single", "metric" : DTW_METRIC},
+    #     {"linkage" : "ward", "metric" : DTW_METRIC},
     # ]
 
-    model_classes = [ SpectralClustering ]
-    model_names = [ "SpectralClustering" ]
-    model_kws = [ {}]
+    # model_classes = [ SpectralClustering ]
+    # model_names = [ "SpectralClustering" ]
+    # model_kws = [ {}]
 
     # model_classes = [ KMeans ]
     # model_names = [ "KMeans" ]
     # model_kws = [ {}]
 
-    # model_classes = [
-    #     KMedoids,
-    #     ]
-    # model_names = [
-    #     "KMedoids",
-    # ]
+    # model_classes = [ TimeSeriesKMeans ]
+    # model_names = [ "TimeSeriesKMeans" ]
+    # model_kws = [ {}]
+
+    model_classes = [
+        KMedoids,
+        ]
+    model_names = [
+        "KMedoids",
+    ]
     # model_kws = [
-    #     {},
+    #     {"metric" : METRIC},
     # ]
+    model_kws = [
+        {"metric" : DTW_METRIC},
+    ]
 
     t_start = time.time()
     for i_model, model_class in enumerate(model_classes):

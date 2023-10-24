@@ -19,14 +19,14 @@ from pycvi.vi import variational_information
 
 from clusterexp.utils import (
     load_data_from_github, get_data_labels, get_list_datasets,
-    get_list_exp, URL_ROOT
+    get_list_exp, URL_ROOT, load_json
 )
 
 import warnings
 warnings.filterwarnings("ignore")
 
 DATA_SOURCE = "artificial"
-#DATA_SOURCE = "real-world"
+DATA_SOURCE = "real-world"
 
 RES_DIR = f'./res/{DATA_SOURCE}/'
 PATH = f"{URL_ROOT}{DATA_SOURCE}/"
@@ -134,8 +134,8 @@ def compute_scores_VI(
     # all clusterings of this experiment
     clusterings = exp['clusterings']
     k_true = exp["k"]
-    # best clusters (keys become string when saved/loaded)
-    best_clusters = clusterings[str(k_true)]
+    # best clusters
+    best_clusters = clusterings[k_true]
 
     # ---------------- Plot true clusters ------------------------------
     ax_titles = []
@@ -217,6 +217,7 @@ def main():
     # For each dataset, find all experiments working on this dataset
     # but using different clustering methods (by filtering on the
     # filename)
+    t_start = time.time()
     for d in datasets:
         print(" ---------------- DATASET {} ---------------- ".format(d))
 
@@ -233,8 +234,7 @@ def main():
         ]
 
         for fname in fnames:
-            with open(RES_DIR + fname + ".json") as f_json:
-                exp = json.load(f_json)
+            exp = load_json(f"{RES_DIR}{fname}.json")
 
             model_name = exp["model"]
             k_true = exp["k"]
@@ -242,7 +242,7 @@ def main():
             exp, fig = compute_scores_VI(X, y, true_clusters, exp)
 
             # ----- save figures and experiments -----
-            exp_fname = f"{RES_DIR}{model_name}_{d}"
+            exp_fname = f"{RES_DIR}{model_name}/{d}"
 
             # Save figure if it exists (d<=3)
             if fig is not None:
@@ -255,6 +255,9 @@ def main():
             with open(exp_fname + ".json", 'w', encoding='utf-8') as f:
                 f.write(json_str)
 
+    t_end = time.time()
+    dt = t_end - t_start
+    print(f"\n\nTotal execution time: {dt:.2f}")
     fout.close()
 
 if __name__ == "__main__":
