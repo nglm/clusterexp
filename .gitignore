@@ -9,4 +9,11 @@
 */docs/build*
 # no tmp files
 tmp/*
+*/AgglomerativeClustering-Single/*
+*/AgglomerativeClustering-Ward/*
+*/AgglomerativeClustering-Average/*
+*/KMeans/*
+*/TimeSeriesKMeans/*
+*/KMedoids/*
+*/SpectralClustering/*
 
