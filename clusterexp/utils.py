@@ -5,6 +5,8 @@ import pandas as pd
 import numpy as np
 import os
 import json
+from pycvi.compute_scores import f_pdist
+
 from typing import List, Dict
 
 # --------------------- ClusteringBenchmark ----------------------------
@@ -54,7 +56,6 @@ ILL_FORMATED = [
     "PickupGestureWiimoteZ", "PLAID", "ShakeGestureWiimoteZ",
     ]
 ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
-
 
 def arff_from_github(url, verbose=False):
     try:
@@ -118,7 +119,7 @@ def get_data_labels_UCR(fname, path="./"):
 
     df = pd.read_csv(fname, sep="\t")
 
-    data = np.expand_dims(df.iloc[:, 1:].to_numpy(), axis=1)
+    data = np.expand_dims(df.iloc[:, 1:].to_numpy(), axis=2)
 
     labels = df.iloc[:, 0].to_numpy()
     labels, n_labels = process_labels(labels)
