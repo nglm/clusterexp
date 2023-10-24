@@ -149,7 +149,10 @@ def compute_scores_VI(
 
     print(" === VI === ")
     for k, clustering in clusterings.items():
-        VIs[k] = variational_information(true_clusters, clustering)
+        if clusterings is None:
+            VIs[k] = None
+        else:
+            VIs[k] = variational_information(true_clusters, clustering)
         print(k, VIs[k])
 
     # Add VI to the exp file dict
