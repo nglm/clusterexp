@@ -5,7 +5,6 @@ from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
 from tslearn.clustering import TimeSeriesKMeans
-from tslearn.metrics import cdist_soft_dtw_normalized
 from datetime import date
 import sys, os
 import time
@@ -13,28 +12,42 @@ import json
 from mpl_toolkits.mplot3d import Axes3D
 
 from pycvi.cluster import generate_all_clusterings
+from pycvi.compute_scores import f_pdist
 
 from clusterexp.utils import (
-    get_data_labels, write_list_datasets, UNKNOWN_K, INVALID, URL_ROOT,
+    get_data_labels, get_data_labels_UCR, write_list_datasets, get_fname,
+    UNKNOWN_K, INVALID, URL_ROOT, PATH_UCR
 )
 
 import warnings
 warnings.filterwarnings("ignore")
 
-DATA_SOURCE = "artificial"
-DATA_SOURCE = "real-world"
-#DATA_SOURCE = "UCR"
+def define_globals(source_number: int = 0):
+    global DATA_SOURCE
+    global RES_DIR, PATH, FNAME_DATASET_EXPS, FNAME_DATASET_ALL
+    global SEED, METRIC
 
-RES_DIR = f'./res/{DATA_SOURCE}/'
+    sources = ["artificial", "real-world", "UCR"]
+    DATA_SOURCE = sources[source_number]
 
-PATH = f"{URL_ROOT}{DATA_SOURCE}/"
-FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
-FNAME_DATASET_ALL = f"all-datasets-{DATA_SOURCE}.txt"
+    RES_DIR = f'./res/{DATA_SOURCE}/'
 
-SEED = 221
+    PATH = f"{URL_ROOT}{DATA_SOURCE}/"
+    FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
+    FNAME_DATASET_ALL = f"all_datasets-{DATA_SOURCE}.txt"
 
-METRIC = "euclidean"
-DTW_METRIC = lambda c1, c2 : cdist_soft_dtw_normalized(c1, c2, gamma=1)
+    SEED = 221
+
+    def metric_dtw(X, dist_kwargs={}, DTW: bool = True):
+        dims = X.shape
+        if len(dims) == 2 and DTW:
+            X = np.expand_dims(X, axis=2)
+        return f_pdist(X, dist_kwargs=dist_kwargs)
+
+    if DATA_SOURCE == "UCR":
+        METRIC = metric_dtw
+    else:
+        METRIC = "euclidean"
 
 def experiment(
     X,
@@ -46,36 +59,33 @@ def experiment(
 
     exp = {}
 
-    N = len(X)
-    if N > 10000:
-        print("Dataset too big {}".format(N))
-    else:
+    t_start = time.time()
 
-        t_start = time.time()
+    DTW = DATA_SOURCE == "UCR"
+    if DTW and model_class != TimeSeriesKMeans:
+        X = np.squeeze(X)
 
-        DTW = DATA_SOURCE == "UCR"
+    clusterings = generate_all_clusterings(
+            X,
+            model_class,
+            n_clusters_range,
+            DTW=False,
+            scaler=scaler,
+            model_kw=model_kw,
+        )
 
-        clusterings = generate_all_clusterings(
-                X,
-                model_class,
-                n_clusters_range,
-                DTW=DTW,
-                scaler=scaler,
-                model_kw=model_kw,
-            )
+    t_end = time.time()
+    dt = t_end - t_start
 
-        t_end = time.time()
-        dt = t_end - t_start
+    # store clustering information
+    exp["clusterings"] = clusterings[0]
+    exp["time"] : dt
 
-        # store clustering information
-        exp["clusterings"] = clusterings[0]
-        exp["time"] : dt
-
-        print(f"Clusterings generated in: {dt:.2f}s")
+    print(f"Clusterings generated in: {dt:.2f}s")
 
     return exp
 
-def main():
+def main(run_number: int = 0):
     """
     Compute and store clusterings for all datasets for a given set of
     clustering methods.
@@ -105,7 +115,11 @@ def main():
     ]
     for fname in l_fname_all:
         #print(fname, flush=True)
-        data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
+        if DATA_SOURCE == "UCR":
+            f = f"{PATH_UCR}{get_fname(fname, data_source=DATA_SOURCE)}"
+            data, labels, n_labels, _ = get_data_labels_UCR(f, path=PATH)
+        else:
+            data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
         N = len(data)
         if N <= 10000 and n_labels <= 20:
             l_data.append(data)
@@ -123,41 +137,44 @@ def main():
     # ------ Run experiments for all datasets and all scores -----------
     scaler = StandardScaler()
     scaler_name = "StandardScaler"
+
+    if run_number == 0:
+
+        model_classes = [
+            AgglomerativeClustering, AgglomerativeClustering,
+            ]
+        model_names = [
+            "AgglomerativeClustering-Single", "AgglomerativeClustering-Average",
+        ]
+        model_kws = [
+            {"linkage" : "single", "metric" : METRIC},
+            {"linkage" : "average", "metric" : METRIC},
+        ]
+    elif run_number == 1:
+
+        model_classes = [ SpectralClustering, KMedoids ]
+        model_names = [ "SpectralClustering", "KMedoids", ]
+        model_kws = [ {}, {"metric" : METRIC}]
+
+    elif run_number == 2:
+        if DATA_SOURCE == "UCR":
+            model_classes = [ TimeSeriesKMeans ]
+            model_names = [ "TimeSeriesKMeans" ]
+            model_kws = [ {}]
+        else:
+            model_classes = [ KMeans ]
+            model_names = [ "KMeans" ]
+            model_kws = [ {}]
+
     # model_classes = [
-    #     AgglomerativeClustering, AgglomerativeClustering,
+    #     KMedoids,
     #     ]
     # model_names = [
-    #     "AgglomerativeClustering-Single", "AgglomerativeClustering-Ward",
+    #     "KMedoids",
     # ]
-    # model_kws = [
-    #     {"linkage" : "single", "metric" : DTW_METRIC},
-    #     {"linkage" : "ward", "metric" : DTW_METRIC},
-    # ]
-
-    # model_classes = [ SpectralClustering ]
-    # model_names = [ "SpectralClustering" ]
-    # model_kws = [ {}]
-
-    # model_classes = [ KMeans ]
-    # model_names = [ "KMeans" ]
-    # model_kws = [ {}]
-
-    # model_classes = [ TimeSeriesKMeans ]
-    # model_names = [ "TimeSeriesKMeans" ]
-    # model_kws = [ {}]
-
-    model_classes = [
-        KMedoids,
-        ]
-    model_names = [
-        "KMedoids",
-    ]
     # model_kws = [
     #     {"metric" : METRIC},
     # ]
-    model_kws = [
-        {"metric" : DTW_METRIC},
-    ]
 
     t_start = time.time()
     for i_model, model_class in enumerate(model_classes):
@@ -180,7 +197,7 @@ def main():
             exp["k"] = l_n_labels[i]
             exp["scaler"] = scaler_name
             exp["model"] = model_name
-            exp["model_kw"] = model_kw
+            exp["model_kw"] = {k : str(v) for k, v in model_kw.items()}
             exp['seed'] = SEED
 
             # save experiment information as json
@@ -200,6 +217,10 @@ def main():
     fout.close()
 
 if __name__ == "__main__":
-    main()
+    source_number = int(sys.argv[1])
+    run_number = int(sys.argv[1])
+
+    define_globals(source_number)
+    main(run_number)
 
 
