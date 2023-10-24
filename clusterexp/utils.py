@@ -5,7 +5,6 @@ import pandas as pd
 import numpy as np
 import os
 import json
-from pycvi.compute_scores import f_pdist
 
 from typing import List, Dict
 
