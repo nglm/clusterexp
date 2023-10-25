@@ -227,15 +227,16 @@ def main(run_number: int = 0):
     print(f"\n\nTotal execution time: {dt:.2f}")
     fout.close()
 
-def run_process(source_number, run_number):
-    define_globals(source_number)
+def run_process(source_number, run_number, local):
+    define_globals(source_number, local)
     main(run_number)
 
 if __name__ == "__main__":
     source_numbers = range(3)
     run_numbers = range(3)
+    local = bool(sys.argv[1])
     processes = [
-        Process(target=run_process, args=(i, j))
+        Process(target=run_process, args=(i, j, local))
         for i in source_numbers for j in run_numbers
     ]
 
@@ -245,8 +246,9 @@ if __name__ == "__main__":
     # now wait for them to finish
     for process in processes:
         process.join()
-    # source_number = int(sys.argv[1])
-    # run_number = int(sys.argv[1])
+
+    # source_number = int(sys.argv[2])
+    # run_number = int(sys.argv[3])
 
     # define_globals(source_number)
     # main(run_number)
