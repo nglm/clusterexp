@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from multiprocessing import Process
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
@@ -95,7 +96,7 @@ def main(run_number: int = 0):
 
     # -------------- Redirect output --------------
     today = str(date.today())
-    out_fname = './output-run-' + today + ".txt"
+    out_fname = f'./output-run-{today}_{DATA_SOURCE}_{run_number}.txt'
 
     fout = open(out_fname, 'wt')
     sys.stdout = fout
@@ -216,11 +217,28 @@ def main(run_number: int = 0):
     print(f"\n\nTotal execution time: {dt:.2f}")
     fout.close()
 
-if __name__ == "__main__":
-    source_number = int(sys.argv[1])
-    run_number = int(sys.argv[1])
-
+def run_process(source_number, run_number):
     define_globals(source_number)
     main(run_number)
+
+if __name__ == "__main__":
+    source_numbers = range(3)
+    run_numbers = range(3)
+    processes = [
+        Process(target=run_process, args=(i, j))
+        for i in source_numbers for j in run_numbers
+    ]
+
+    # kick them off
+    for process in processes:
+        process.start()
+    # now wait for them to finish
+    for process in processes:
+        process.join()
+    # source_number = int(sys.argv[1])
+    # run_number = int(sys.argv[1])
+
+    # define_globals(source_number)
+    # main(run_number)
 
 
