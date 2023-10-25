@@ -45,7 +45,8 @@ INVALID = [
 
 # ---------------------------- UCR -------------------------------------
 HOME_DIR = os.path.expanduser('~')
-PATH_UCR = f"{HOME_DIR}/Documents/Work/Data/UCR/UCRArchive_2018/"
+PATH_UCR_LOCAL = f"{HOME_DIR}/Documents/Work/Data/UCR/UCRArchive_2018/"
+PATH_UCR_REMOTE = f"{HOME_DIR}/UCR/UCRArchive_2018/"
 
 ILL_FORMATED = [
     "DodgerLoopDay", "DodgerLoopGame", "DodgerLoopWeekend",

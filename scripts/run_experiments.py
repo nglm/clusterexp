@@ -17,16 +17,16 @@ from pycvi.compute_scores import f_pdist
 
 from clusterexp.utils import (
     get_data_labels, get_data_labels_UCR, write_list_datasets, get_fname,
-    UNKNOWN_K, INVALID, URL_ROOT, PATH_UCR
+    UNKNOWN_K, INVALID, URL_ROOT, PATH_UCR_LOCAL, PATH_UCR_REMOTE
 )
 
 import warnings
 warnings.filterwarnings("ignore")
 
-def define_globals(source_number: int = 0):
+def define_globals(source_number: int = 0, local=True):
     global DATA_SOURCE
     global RES_DIR, PATH, FNAME_DATASET_EXPS, FNAME_DATASET_ALL
-    global SEED, METRIC, K_MAX
+    global SEED, METRIC, K_MAX, PATH_UCR
 
     sources = ["artificial", "real-world", "UCR"]
     DATA_SOURCE = sources[source_number]
@@ -50,6 +50,11 @@ def define_globals(source_number: int = 0):
         METRIC = metric_dtw
     else:
         METRIC = "euclidean"
+
+    if local:
+        PATH_UCR = PATH_UCR_LOCAL
+    else:
+        PATH_UCR = PATH_UCR_REMOTE
 
 def experiment(
     X,
