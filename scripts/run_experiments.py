@@ -26,7 +26,7 @@ warnings.filterwarnings("ignore")
 def define_globals(source_number: int = 0):
     global DATA_SOURCE
     global RES_DIR, PATH, FNAME_DATASET_EXPS, FNAME_DATASET_ALL
-    global SEED, METRIC
+    global SEED, METRIC, K_MAX
 
     sources = ["artificial", "real-world", "UCR"]
     DATA_SOURCE = sources[source_number]
@@ -38,6 +38,7 @@ def define_globals(source_number: int = 0):
     FNAME_DATASET_ALL = f"all_datasets-{DATA_SOURCE}.txt"
 
     SEED = 221
+    K_MAX = 25
 
     def metric_dtw(X, dist_kwargs={}, DTW: bool = True):
         dims = X.shape
@@ -53,12 +54,16 @@ def define_globals(source_number: int = 0):
 def experiment(
     X,
     model_class = AgglomerativeClustering,
-    n_clusters_range = [i for i in range(25)],
+    n_clusters_range = [i for i in range(K_MAX)],
     model_kw = {},
     scaler = StandardScaler(),
 ):
 
     exp = {}
+
+    N = len(X)
+    if N < K_MAX:
+        n_clusters_range = [i for i in range(K_MAX)]
 
     t_start = time.time()
 
@@ -189,7 +194,7 @@ def main(run_number: int = 0):
             print(f"\n{l_fname[i]}", flush=True)
             exp = experiment(
                 X,
-                n_clusters_range=[i for i in range(25)],
+                n_clusters_range=[i for i in range(K_MAX)],
                 model_class=model_class,
                 model_kw=model_kw,
                 scaler=scaler,
