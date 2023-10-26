@@ -59,7 +59,7 @@ def define_globals(source_number: int = 0, local=True):
 def experiment(
     X,
     model_class = AgglomerativeClustering,
-    n_clusters_range = [i for i in range(K_MAX)],
+    n_clusters_range = [i for i in range(25)],
     model_kw = {},
     scaler = StandardScaler(),
 ):
@@ -68,7 +68,7 @@ def experiment(
 
     N = len(X)
     if N < K_MAX:
-        n_clusters_range = [i for i in range(K_MAX)]
+        n_clusters_range = [i for i in range(N)]
 
     t_start = time.time()
 
@@ -132,7 +132,7 @@ def main(run_number: int = 0):
         else:
             data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
         N = len(data)
-        if N <= 10000 and n_labels <= 20:
+        if N <= 10000 and n_labels is not None and n_labels <= 20:
             l_data.append(data)
             l_labels.append(labels)
             l_n_labels.append(n_labels)
@@ -234,7 +234,7 @@ def run_process(source_number, run_number, local):
 if __name__ == "__main__":
     source_numbers = range(3)
     run_numbers = range(3)
-    local = bool(sys.argv[1])
+    local = bool(int(sys.argv[1]))
     processes = [
         Process(target=run_process, args=(i, j, local))
         for i in source_numbers for j in run_numbers
