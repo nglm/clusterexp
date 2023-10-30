@@ -1,7 +1,6 @@
 heart-statlog.arff
 balance-scale.arff
 thy.arff
-cpu.arff
 wdbc.arff
 zoo.arff
 arrhythmia.arff
@@ -14,6 +13,5 @@ sonar.arff
 wine.arff
 german.arff
 tae.arff
-letter.arff
 iono.arff
 wisc.arff
