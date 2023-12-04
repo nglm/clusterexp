@@ -6,7 +6,7 @@ import numpy as np
 import os
 import json
 
-from typing import List, Dict
+from typing import List, Dict, Tuple, Union
 
 # --------------------- ClusteringBenchmark ----------------------------
 
@@ -68,7 +68,10 @@ def arff_from_github(url, verbose=False):
         print(ex, flush=True)
     return data, meta
 
-def load_data_from_github(url, with_labels=True):
+def load_data_from_github(
+    url: str,
+    with_labels: bool = True
+) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
     data, meta = arff_from_github(url)
     df = pd.DataFrame(data)
     df.columns = df.columns.str.lower()
@@ -86,7 +89,7 @@ def load_data_from_github(url, with_labels=True):
         labels = None
     return data, labels, meta
 
-def process_labels(labels):
+def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
     """
     Give the real number of labels and labels in case of n_labels = N
     """
@@ -97,7 +100,21 @@ def process_labels(labels):
         labels = np.zeros(N)
     return labels, n_labels
 
-def get_data_labels(fname, path="./"):
+def get_data_labels(
+    fname: str,
+    path: str ="./"
+) -> Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]:
+    """
+    Get dataset, labels, number of labels, and metadata for non UCR data
+
+    :param fname: Filename of the dataset
+    :type fname: str
+    :param path: Path to the file, defaults to "./"
+    :type path: str, optional
+    :return: All information about the dataset, the data, labels, number
+        of labels, and metadata
+    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]
+    """
     n_labels = None
     if fname in UNLABELED:
         with_labels = False
@@ -115,7 +132,21 @@ def get_data_labels(fname, path="./"):
         labels, n_labels = process_labels(labels)
     return data, labels, n_labels, meta
 
-def get_data_labels_UCR(fname, path="./"):
+def get_data_labels_UCR(
+    fname: str,
+    path: str ="./"
+) -> Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]:
+    """
+    Get dataset, labels number of labels, and metadata for UCR data
+
+    :param fname: Filename of the dataset
+    :type fname: str
+    :param path: Path to the file, defaults to "./"
+    :type path: str, optional
+    :return: All information about the dataset, the data, labels, number
+        of labels, and metadata
+    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], int, None]
+    """
 
     df = pd.read_csv(fname, sep="\t")
 

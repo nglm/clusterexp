@@ -11,6 +11,7 @@ import time
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from math import ceil, floor
+from typing import List
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.scores import SCORES
@@ -34,7 +35,7 @@ FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
 
 SEED = 221
 
-
+# --------  Adapt the figures to the total number of scores ------------
 N_SCORES = 0
 for s in SCORES:
     for score_type in s.score_types:
@@ -43,20 +44,47 @@ for s in SCORES:
 N_ROWS = ceil(N_SCORES / 5)
 N_COLS = 5
 FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
+# ----------------------------------------------------------------------
 
-def plot_clusters(data, clusterings, fig, titles):
-    # Some datasets are in 3D
+def plot_clusters(
+    data: np.ndarray,
+    clusterings_selected: List[List[List[int]]],
+    fig,
+    titles: List[str],
+):
+    """
+    Add one plot per score with their corresponding selected clustering
+
+    The fig should already contain 2 plots first with the true
+    clusterings, and the clusterings obtained with k_true.
+
+    :param data: Original data, corresponding to a benchmark dataset
+    :type data: np.ndarray, shape (N, d)
+    :param clusterings_selected: A list of n_score clusterings.
+    :type clusterings_selected: List[List[List[int]]]
+    :param fig: Figure where all the plots are (including 2 about the
+        true clusters)
+    :type fig:
+    :param titles: List of titles for each score
+    :type titles: List[str]
+    :return: a figure with one clustering per score (+2 plots first)
+    :rtype:
+    """
     (N, d) = data.shape
-    # Plot the clustering selected by a given score
-    for i in range(len(clusterings)):
-        # Plot clusters one by one
+    # -------  Plot the clustering selected by a given score -----------
+    for i_score in range(len(clusterings_selected)):
+
+        # ------------- Find the ax corresponding to the score ---------
         if d <= 2:
-            ax = fig.axes[i+2] # i+2 because there are 2 plots already
+            ax = fig.axes[i_score+2] # i+2 because there are 2 plots already
+        # Some datasets are in 3D
         elif d == 3:
-            ax = fig.add_subplot(N_ROWS, N_COLS, i+3, projection='3d')
+            ax = fig.add_subplot(N_ROWS, N_COLS, i_score+3, projection='3d')
         else:
             return None
-        for i_label, cluster in enumerate(clusterings[i]):
+
+        # ------------------ Plot clusters one by one ------------------
+        for i_label, cluster in enumerate(clusterings_selected[i_score]):
             if d == 1:
                 ax.scatter(np.zeros_like(data[cluster, 0]), data[cluster, 0], s=1)
             elif d == 2:
@@ -65,21 +93,43 @@ def plot_clusters(data, clusterings, fig, titles):
                 ax.scatter(
                     data[cluster, 0], data[cluster, 1], data[cluster, 2], s=1
                 )
-        ax.set_title(str(titles[i]))
+
+        # Add predefined title
+        ax.set_title(str(titles[i_score]))
     return fig
 
-def plot_true(data, labels, clusterings):
-    # Some datasets are in 3D
+def plot_true(
+    data: np.ndarray,
+    labels: np.ndarray,
+    clusterings: List[List[List[int]]],
+):
+    """
+    Plot the true clustering and the clustering obtained with k_true
+
+    Create also the whole figure that will be used to plot the
+    clusterings selected by each score.
+
+    :param data: Original data, corresponding to a benchmark dataset
+    :type data: np.ndarray, shape (N, d)
+    :param labels: True labels
+    :type labels: np.ndarray
+    :param clusterings: A list of k clusterings.
+    :type clusterings: List[List[List[int]]]
+    :return: _description_
+    :rtype: _type_
+    """
+
     (N, d) = data.shape
 
     # ----------------------- Create figure ----------------
     if d <= 2:
         fig, axes = plt.subplots(
-            nrows=N_ROWS, ncols=N_COLS, sharex=True, sharey=True, figsize=(20,10),
-            tight_layout=True
+            nrows=N_ROWS, ncols=N_COLS, sharex=True, sharey=True,
+            figsize=FIGSIZE, tight_layout=True
         )
+    # Some datasets are in 3D
     elif d == 3:
-        fig = plt.figure(figsize=(20,10), tight_layout=True)
+        fig = plt.figure(figsize=FIGSIZE, tight_layout=True)
     else:
         return None
 
@@ -94,7 +144,9 @@ def plot_true(data, labels, clusterings):
 
     # ------------------- variables for the 2 axes ----------------
     clusters = [
+        # The true clustering
         [labels == classes[i] for i in range(n_labels)],
+        # The clustering obtained with k_true
         clusterings[n_labels]
     ]
     ax_titles = [
@@ -109,7 +161,7 @@ def plot_true(data, labels, clusterings):
         elif d == 3:
             ax = fig.add_subplot(N_ROWS, N_COLS, i_ax+1, projection='3d')
 
-        # Plot clusters one by one
+        # ---------------  Plot clusters one by one --------------------
         for i in range(n_labels):
 
             c = clusters[i_ax][i]
@@ -123,14 +175,34 @@ def plot_true(data, labels, clusterings):
                 ax.scatter(
                     data[c, 0], data[c, 1], data[c, 2], s=1
                 )
+
+        # Add title
         ax.set_title(ax_titles[i_ax])
 
     return fig
 
 def compute_scores_VI(
-    X, y, true_clusters,
-    exp
+    X: np.ndarray,
+    y: np.ndarray,
+    true_clusters: List[List[int]],
+    exp: dict,
 ):
+    """
+    Compute scores, VI and return a summary figure with updated exp
+
+    :param X: Original data, corresponding to a benchmark dataset
+    :type X: np.ndarray, shape (N, d)
+    :param y: True labels
+    :type y: np.ndarray
+    :param true_clusters: The original clustering
+    :type true_clusters: List[List[int]]
+    :param exp: The dictionary summarizing the experiment
+    :type exp: dict
+    :return: The updated experiment (with scores and VI) and a figure
+        with the true clustering, the clustering obtained with k_true
+        and the selected clustering for each score
+    :rtype:
+    """
     # all clusterings of this experiment
     clusterings = exp['clusterings']
     k_true = exp["k"]

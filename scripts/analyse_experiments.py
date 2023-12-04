@@ -55,30 +55,43 @@ def main():
 
         # ---------------- Initialisation of dataset ------------------
 
+        # Here we gather global information about a specific dataset
+        # Notably to evaluate how difficult this dataset was and how
+        # "sensible" the true clustering was compared to what is commonly
+        # considered as a good clustering by the methods and the CVIs
         res_datasets[d] = {
             # Global values
-            "acc" : 0,            # +1 for each success (regardless of quality)
-            "weighted_acc" : 0,   # +w (regardless of success) using k_selected
-            "max_acc" : 0,        # +w using k_true with each experiment
+            "acc" : 0,            # +1 if k_true=k_selected (indpdt of quality)
+            "weighted_acc" : 0,   # +w if k_true=k_selected
+            "k_true_quality" : 0, # +w using k_true (indpdt of k_selected)
+            "quality" : 0,        # +w using k_selected (indpdt of k_true)
+            "max_quality" : 0,    # +w using k that has max quality
             "exps" : {},          # One dict per experience
             "scores" : {},        # One dict per score
-            "k_true" : None,
+            "k_true" : None,      # k_true of this dataset
         }
 
-        # For each dataset, find all experiments working on this dataset
-        # but using different clustering methods (by filtering on the
-        # filename)
-        fnames = get_list_exp(dataset_name=d, res_dir=RES_DIR)
-
         # Initialise the accumulators on this dataset for each score
+        # Here we gather information on how good this CVI did on this
+        # dataset, combining the info of all clustering methods
         for s in SCORES:
             for score_type in s.score_types:
                 res_datasets[d]["scores"][str(score)] = {
                     "acc" : 0,
                     "weighted_acc" : 0,
+                    "k_true_quality" : 0,
+                    "quality" : 0,
+                    "max_quality" : 0,
                     "VIs_selected" : [], # VI of k_selected with this score
                     "success" : [],
                 }
+
+        # ----------- Going through all clustering methods -------------
+
+        # For each dataset, find all experiments working on this dataset
+        # but using different clustering methods (by filtering on the
+        # filename)
+        fnames = get_list_exp(dataset_name=d, res_dir=RES_DIR)
 
         for fname in fnames:
 
