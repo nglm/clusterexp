@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from multiprocessing import Process
 import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
@@ -20,20 +21,12 @@ from pycvi.vi import variational_information
 
 from clusterexp.utils import (
     load_data_from_github, get_data_labels, get_list_datasets,
-    get_list_exp, URL_ROOT, load_json
+    get_list_exp, URL_ROOT, load_json,
+    UNKNOWN_K, INVALID, URL_ROOT, PATH_UCR_LOCAL, PATH_UCR_REMOTE
 )
 
 import warnings
 warnings.filterwarnings("ignore")
-
-DATA_SOURCE = "artificial"
-DATA_SOURCE = "real-world"
-
-RES_DIR = f'./res/{DATA_SOURCE}/'
-PATH = f"{URL_ROOT}{DATA_SOURCE}/"
-FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
-
-SEED = 221
 
 # --------  Adapt the figures to the total number of scores ------------
 N_SCORES = 0
@@ -45,6 +38,36 @@ N_ROWS = ceil(N_SCORES / 5)
 N_COLS = 5
 FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
 # ----------------------------------------------------------------------
+
+def define_globals(source_number: int = 0, local=True):
+    """
+    Dirty way of coding in order to parallelize the processes.
+
+    :param source_number: index in ["artificial", "real-world", "UCR"]
+    :type source_number: int, optional
+    :param local: to know whether the local path should be used or not,
+        defaults to True
+    :type local: bool, optional
+    """
+    global DATA_SOURCE
+    global RES_DIR, PATH, FNAME_DATASET_EXPS
+    global SEED, PATH_UCR
+
+    sources = ["artificial", "real-world", "UCR"]
+    DATA_SOURCE = sources[source_number]
+
+    RES_DIR = f'./res/{DATA_SOURCE}/'
+
+    PATH = f"{URL_ROOT}{DATA_SOURCE}/"
+    FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
+
+    SEED = 221
+
+    if local:
+        PATH_UCR = PATH_UCR_LOCAL
+    else:
+        PATH_UCR = PATH_UCR_REMOTE
+
 
 def plot_clusters(
     data: np.ndarray,
@@ -211,7 +234,10 @@ def compute_scores_VI(
 
     # ---------------- Plot true clusters ------------------------------
     ax_titles = []
-    fig = plot_true(X, y, best_clusters)
+    if DATA_SOURCE == "artificial":
+        fig = plot_true(X, y, best_clusters)
+    else:
+        fig = None
 
     # ------------------------ Compute VIs ------------------------------
     # Compute VI between the true clustering and each clustering
@@ -243,7 +269,7 @@ def compute_scores_VI(
                 score,
                 X,
                 [exp["clusterings"]],
-                DTW=False,
+                DTW= bool(exp["DTW"]),
                 scaler=StandardScaler(),
             )
 
@@ -319,7 +345,7 @@ def main():
             # ----- save figures and experiments -----
             exp_fname = f"{RES_DIR}{model_name}/{d}"
 
-            # Save figure if it exists (d<=3)
+            # Save figure if it exists ("artificial" and d<=3)
             if fig is not None:
                 figtitle = f"{d} - {model_name} - True k={k_true}"
                 fig.suptitle(figtitle)
@@ -327,7 +353,7 @@ def main():
 
             # Save experiment information as json
             json_str = json.dumps(exp, indent=2)
-            with open(exp_fname + ".json", 'w', encoding='utf-8') as f:
+            with open(exp_fname + "_scored" + ".json", 'w', encoding='utf-8') as f:
                 f.write(json_str)
 
     t_end = time.time()
@@ -335,7 +361,23 @@ def main():
     print(f"\n\nTotal execution time: {dt:.2f}")
     fout.close()
 
-if __name__ == "__main__":
+def run_process(source_number, local):
+    define_globals(source_number, local)
     main()
 
+if __name__ == "__main__":
+    source_numbers = range(3)
+    local = bool(int(sys.argv[1]))
+
+    processes = [
+        Process(target=run_process, args=(i, local))
+        for i in source_numbers
+    ]
+
+    # kick them off
+    for process in processes:
+        process.start()
+    # now wait for them to finish
+    for process in processes:
+        process.join()
 
