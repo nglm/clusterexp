@@ -72,9 +72,22 @@ def load_data_from_github(
     url: str,
     with_labels: bool = True
 ) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
+    """
+    Return data, labels and metadata from github url
+
+    Ignore non-numerical variables in the datasets
+
+    :param url: github url of the dataset
+    :type url: str
+    :param with_labels: _description_, defaults to True
+    :type with_labels: bool, optional
+    :return: _description_
+    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
+    """
     data, meta = arff_from_github(url)
     df = pd.DataFrame(data)
     df.columns = df.columns.str.lower()
+    # We keep only numerical variables
     data_col = [
         c for c, t in zip(df.columns, df.dtypes)
         if (c != "class") and t in ["float", "int"]
