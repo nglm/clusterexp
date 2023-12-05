@@ -229,10 +229,6 @@ def main(run_number: int = 0):
         model_classes = [KMedoids]
         model_names = ["KMedoids", ]
         model_kws = [{}]
-        if not DTW:
-            model_classes += [ SpectralClustering]
-            model_names += ["SpectralClustering"]
-            model_kws += [{}]
 
     elif run_number == 2:
         if DTW:
@@ -243,6 +239,15 @@ def main(run_number: int = 0):
             model_classes = [ KMeans ]
             model_names = [ "KMeans" ]
             model_kws = [{}]
+    elif run_number == 4:
+        model_classes = []
+        model_names = []
+        model_kws = []
+
+        if not DTW:
+            model_classes += [ SpectralClustering]
+            model_names += ["SpectralClustering"]
+            model_kws += [{}]
 
     t_start = time.time()
     for i_model, model_class in enumerate(model_classes):
@@ -290,17 +295,21 @@ def run_process(source_number, run_number, local, use_DTW):
     main(run_number)
 
 if __name__ == "__main__":
-    source_numbers = range(3)
-    run_numbers = range(3)
+    # source_numbers = range(3)
+    source_numbers = [2]
+    run_numbers = [2, 4]
 
     local = bool(int(sys.argv[1]))
-    DTWs = [True, False]
+    DTWs = [False]
 
     # All combination with DTW=False
-    processes = [
-        Process(target=run_process, args=(i, j, local, False))
-        for i in source_numbers for j in run_numbers
-    ]
+    if False in DTWs:
+        processes = [
+            Process(target=run_process, args=(i, j, local, False))
+            for i in source_numbers for j in run_numbers
+        ]
+    else:
+        processes = []
     # Then the DTW=True is relevant only on UCR data
     if True in DTWs and 2 in source_numbers:
         processes += [
