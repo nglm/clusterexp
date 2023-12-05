@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from math import ceil, floor
 from typing import List
+import os
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.scores import SCORES
@@ -20,9 +21,9 @@ from pycvi.compute_scores import compute_all_scores
 from pycvi.vi import variational_information
 
 from clusterexp.utils import (
-    load_data_from_github, get_data_labels, get_list_datasets,
-    get_list_exp, URL_ROOT, load_json,
-    UNKNOWN_K, INVALID, URL_ROOT, PATH_UCR_LOCAL, PATH_UCR_REMOTE
+    get_data_labels, get_list_datasets,
+    get_list_exp, URL_ROOT, load_json, get_fname, get_data_labels_UCR,
+    URL_ROOT, PATH_UCR_LOCAL, PATH_UCR_REMOTE
 )
 
 import warnings
@@ -49,7 +50,7 @@ def define_globals(source_number: int = 0, local=True):
         defaults to True
     :type local: bool, optional
     """
-    global DATA_SOURCE
+    global DATA_SOURCE, DTW
     global RES_DIR, PATH, FNAME_DATASET_EXPS
     global SEED, PATH_UCR
 
@@ -62,6 +63,7 @@ def define_globals(source_number: int = 0, local=True):
     FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
 
     SEED = 221
+    DTW = None
 
     if local:
         PATH_UCR = PATH_UCR_LOCAL
@@ -136,7 +138,7 @@ def plot_true(
     :type data: np.ndarray, shape (N, d)
     :param labels: True labels
     :type labels: np.ndarray
-    :param clusterings: A list of k clusterings.
+    :param clusterings: The clusterings obtained with k_true
     :type clusterings: List[List[List[int]]]
     :return: _description_
     :rtype: _type_
@@ -170,7 +172,7 @@ def plot_true(
         # The true clustering
         [labels == classes[i] for i in range(n_labels)],
         # The clustering obtained with k_true
-        clusterings[n_labels]
+        clusterings
     ]
     ax_titles = [
         "True labels, k={}".format(n_labels),
@@ -245,13 +247,13 @@ def compute_scores_VI(
     # real number of clusters
     VIs = {}
 
-    print(" === VI === ")
+    print(" === VI === ", flush=True)
     for k, clustering in clusterings.items():
-        if clusterings is None:
+        if clustering is None:
             VIs[k] = None
         else:
             VIs[k] = variational_information(true_clusters, clustering)
-        print(k, VIs[k])
+        print(k, VIs[k], flush=True)
 
     # Add VI to the exp file dict
     exp["VIs"] = VIs
@@ -265,11 +267,18 @@ def compute_scores_VI(
             print(" ================ {} ================ ".format(score))
             t_start = time.time()
 
+            # Dirty workaround because old files don't have the DTW key
+            if "DTW" in exp:
+                DTW = bool(exp["DTW"])
+            else:
+                DTW = "_True/" in exp["fname"]
+                exp["DTW"] = DTW
+
             scores = compute_all_scores(
                 score,
                 X,
                 [exp["clusterings"]],
-                DTW= bool(exp["DTW"]),
+                DTW= DTW,
                 scaler=StandardScaler(),
             )
 
@@ -280,8 +289,8 @@ def compute_scores_VI(
 
             # Print and store score information
             for k in exp["clusterings"]:
-                print(k, scores[0][k])
-            print("Selected k {}".format(k_selected))
+                print(k, scores[0][k], flush=True)
+            print("Selected k {}".format(k_selected), flush=True)
             print('Code executed in %.2f s' %(dt))
 
             exp["CVIs"][str(score)] = {
@@ -290,8 +299,9 @@ def compute_scores_VI(
                 "time" : dt,
             }
 
-            ax_titles.append("{}, k={}, VI={}".format(
-                score, k_selected, exp["VIs"][k_selected]))
+            ax_titles.append(
+                f"{score}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
+            )
 
     # ---------------- Plot selected clusterings -----------------------
     if fig is not None:
@@ -308,7 +318,7 @@ def main():
 
     # -------------- Redirect output --------------
     today = str(date.today())
-    out_fname = './output-scores_VIs-' + today + ".txt"
+    out_fname = f'./output-scores_VIs-{today}_{DATA_SOURCE}.txt'
 
     fout = open(out_fname, 'wt')
     sys.stdout = fout
@@ -320,12 +330,17 @@ def main():
     # filename)
     t_start = time.time()
     for d in datasets:
-        print(" ---------------- DATASET {} ---------------- ".format(d))
+        print(f" ---------------- DATASET {d} ---------------- ")
 
         fnames = get_list_exp(dataset_name=d, res_dir=RES_DIR)
 
-        X, y, n_labels, meta = get_data_labels(d, path=PATH)
+        if DATA_SOURCE == "UCR":
+            f = f"{PATH_UCR}{get_fname(d, data_source=DATA_SOURCE)}"
+            X, y, n_labels, _ = get_data_labels_UCR(f, path=PATH)
+        else:
+            X, y, n_labels, meta = get_data_labels(d, path=PATH)
         classes = np.unique(y)
+        print(f"k_true = {n_labels}", flush=True)
 
         # true clusters
         # List[List[int]]
@@ -343,7 +358,8 @@ def main():
             exp, fig = compute_scores_VI(X, y, true_clusters, exp)
 
             # ----- save figures and experiments -----
-            exp_fname = f"{RES_DIR}{model_name}/{d}"
+            os.makedirs(f"{RES_DIR}{model_name}_{DTW}", exist_ok=True)
+            exp_fname = f"{RES_DIR}{model_name}_{DTW}/{d}"
 
             # Save figure if it exists ("artificial" and d<=3)
             if fig is not None:
