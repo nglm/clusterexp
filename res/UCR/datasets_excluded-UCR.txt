@@ -1,0 +1,17 @@
+PigArtPressure
+FiftyWords
+Adiac
+PigCVP
+Phoneme
+PigAirwayPressure
+WordSynonyms
+NonInvasiveFetalECGThorax1
+GestureMidAirD1
+ElectricDevices
+GestureMidAirD3
+Crop
+GestureMidAirD2
+NonInvasiveFetalECGThorax2
+FordB
+FordA
+ShapesAll

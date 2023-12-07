@@ -46,6 +46,12 @@ TOO_MANY_LABELS = [
     # real-world
     "arrhythmia.arff", "water-treatment.arff", "wdbc.arff",
     "dermatology.arff", "sonar.arff", "german.arff", "iono.arff",
+
+    # UCR
+    "PigArtPressure", "FiftyWords", "Adiac", "PigCVP", "Phoneme",
+    "PigAirwayPressure", "WordSynonyms", "NonInvasiveFetalECGThorax1",
+    "GestureMidAirD1", "GestureMidAirD2", "GestureMidAirD3",
+    "Crop", "NonInvasiveFetalECGThorax2", "ShapesAll",
 ]
 
 # Too many labels
@@ -57,6 +63,9 @@ TOO_MANY_SAMPLES = [
 
     # real-world
     "letter.arff",
+
+    # UCR
+    "ElectricDevices", "Crop", "FordA", "FordB"
 ]
 
 
@@ -111,6 +120,7 @@ def print_heads(
     path:str = "./",
     n_labels_max:int = 20,
     n_samples_max:int = 10000,
+    UCR: bool = False,
 ) -> None:
     """
     Print all dataframe headers from a list of filenames and path.
@@ -121,27 +131,57 @@ def print_heads(
         "./"
     :type path: str, optional
     """
+    print(f"MAX LABELS: {n_labels_max}\nMAX SAMPLES: {n_samples_max}\n")
     summary = {}
     for f in fnames:
         summary[f] = {}
-        url = path + f
-        print(url)
-        data, meta = arff_from_github(url)
+
+        # Get the dataframe corresponding to the filename
+        # We don't use get_data_labels functions here because we want to
+        # use the raw df.
+        if UCR:
+            fname = get_fname(f, only_root=False, data_source='UCR')
+            print(fname)
+            full_f = path+fname
+            try:
+                df = pd.read_csv(full_f, sep="\t")
+            except Exception as ex:
+                meta = ex
+                df = None
+        else:
+            full_f = path + f
+            print(full_f)
+            data, meta = arff_from_github(full_f)
+            if data is None:
+                df = None
+            else:
+                df = pd.DataFrame(data)
         # Print the head of the data frame, to get a better idea of the
         # dataset
-        if data is not None:
-            df = pd.DataFrame(data)
+
+        if df is not None:
             cols = df.columns.str.lower()
 
-            labeled = "class" in cols
+            labeled = (("class" in cols) or UCR)
             has_na = df.isnull().sum().sum() > 0
             shape = (len(df), len(cols))
 
+
+            # We use get_data_labels here just to count the labels,
+            # not to get df as it would already be processed
+            if UCR:
+                _, _, n_labels, _ = get_data_labels_UCR(full_f, path="")
+            else:
+                if "class" in cols:
+                    _, _, n_labels, _ = get_data_labels(full_f, path="")
+                else:
+                    n_labels = None
+
             msg = (
-                f"{shape}\n" +
+                f"Shape: {shape}   |   n_labels: {n_labels}\n" +
                 f"Labeled:         {labeled}\n" +
                 f"Has NA values:   {has_na}\n" +
-                f"Too many labels: {shape[1]>n_labels_max}\n" +
+                f"Too many labels: {n_labels>n_labels_max}\n" +
                 f"Too many samples:{shape[0]>n_samples_max}"
             )
             print(msg)
@@ -230,7 +270,6 @@ def get_data_labels(
     data, labels, meta = load_data_from_github(
         path + fname, with_labels=with_labels
     )
-    N = len(data)
     if with_labels:
         labels, n_labels = process_labels(labels)
     return data, labels, n_labels, meta
@@ -343,5 +382,5 @@ def get_fname(
         if not only_root:
             fname += f"{d}_TRAIN.tsv"
     else:
-        fname += f"{d}"
+        fname = f"{d}"
     return fname

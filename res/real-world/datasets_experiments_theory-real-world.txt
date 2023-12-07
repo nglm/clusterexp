@@ -1,0 +1,15 @@
+heart-statlog.arff
+balance-scale.arff
+thy.arff
+cpu.arff
+zoo.arff
+ecoli.arff
+glass.arff
+iris.arff
+haberman.arff
+vehicle.arff
+vowel.arff
+wine.arff
+tae.arff
+wisc.arff
+segment.arff

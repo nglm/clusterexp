@@ -1,0 +1,7 @@
+mopsi-finland.arff
+s-set3.arff
+birch-rg3.arff
+s-set4.arff
+birch-rg2.arff
+birch-rg1.arff
+mopsi-joensuu.arff
