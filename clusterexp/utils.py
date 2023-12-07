@@ -12,6 +12,8 @@ from typing import List, Dict, Tuple, Union
 
 URL_ROOT = 'https://raw.githubusercontent.com/nglm/clustering-benchmark/master/src/main/resources/datasets/'
 
+N_SAMPLES_MAX = 10000
+
 # Just one cluster
 UNIMODAL = [
     "birch-rg1.arff", "birch-rg2.arff",
@@ -23,7 +25,8 @@ UNLABELED = [
     "birch-rg1.arff", "birch-rg2.arff",
     "birch-rg3.arff",
     "mopsi-finland.arff", "mopsi-joensuu.arff",
-    "s-set3.arff", "s-set3.arff",
+    "s-set3.arff", "s-set4.arff",
+
     # real-world
     "water-treatment.arff",
 ]
@@ -37,9 +40,35 @@ UNKNOWN_K = [
     # real-world
 ]
 
+# Too many labels
+# (More than 20 in non-time series data, more than 15 in UCR)
+TOO_MANY_LABELS = [
+    # real-world
+    "arrhythmia.arff", "water-treatment.arff", "wdbc.arff",
+    "dermatology.arff", "sonar.arff", "german.arff", "iono.arff",
+]
+
+# Too many labels
+# (More than 20 in non-time series data, more than 15 in UCR)
+TOO_MANY_SAMPLES = [
+    # artificial
+    "mopsi-finland.arff", "birch-rg3.arff", "birch-rg2.arff",
+    "birch-rg1.arff",
+
+    # real-world
+    "letter.arff",
+]
+
+
 # Datasets removed, for various reasons (e.g. missing data)
 INVALID = [
-    'dermatology.arff', "segment.arff", "yeast.arff",
+
+    #"segment.arff",
+    # Contains missing values
+    'dermatology.arff',
+    "water-treatment.arff",
+    # give arff error: "String attributes not supported yet, sorry"
+    "yeast.arff",
 ]
 
 
@@ -58,6 +87,13 @@ ILL_FORMATED = [
 ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
 
 def arff_from_github(url, verbose=False):
+    """
+    Returns data as arff and metadata if no exceptions were found.
+
+    If an exception was found (e.g. "String attributes not supported
+    yet, sorry"), then returns None for the data and the error message
+    as the meta data.
+    """
     try:
         with urllib.request.urlopen(url, timeout=1) as response:
             if verbose:
@@ -65,8 +101,62 @@ def arff_from_github(url, verbose=False):
             arff_data = io.StringIO(response.read().decode('utf-8'))
             data, meta = arff.loadarff(arff_data)
     except Exception as ex:
-        print(ex, flush=True)
+        if verbose:
+            print(ex, flush=True)
+        return None, ex
     return data, meta
+
+def print_heads(
+    fnames: List[str],
+    path:str = "./",
+    n_labels_max:int = 20,
+    n_samples_max:int = 10000,
+) -> None:
+    """
+    Print all dataframe headers from a list of filenames and path.
+
+    :param fnames: list of filenames
+    :type fnames: List[str]
+    :param path: path to the directory containing all files, defaults to
+        "./"
+    :type path: str, optional
+    """
+    summary = {}
+    for f in fnames:
+        summary[f] = {}
+        url = path + f
+        print(url)
+        data, meta = arff_from_github(url)
+        # Print the head of the data frame, to get a better idea of the
+        # dataset
+        if data is not None:
+            df = pd.DataFrame(data)
+            cols = df.columns.str.lower()
+
+            labeled = "class" in cols
+            has_na = df.isnull().sum().sum() > 0
+            shape = (len(df), len(cols))
+
+            msg = (
+                f"{shape}\n" +
+                f"Labeled:         {labeled}\n" +
+                f"Has NA values:   {has_na}\n" +
+                f"Too many labels: {shape[1]>n_labels_max}\n" +
+                f"Too many samples:{shape[0]>n_samples_max}"
+            )
+            print(msg)
+            print(df.head())
+
+            summary[f]["labeled"] = labeled
+            summary[f]["has_na"] = has_na
+            summary[f]["shape"] = shape
+        # If there was a problem loading the data, then the error message
+        # is returned in "meta"
+        else:
+            summary[f]["error"] = meta
+            print(meta)
+    return summary
+
 
 def load_data_from_github(
     url: str,

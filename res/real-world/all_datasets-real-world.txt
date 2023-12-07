@@ -12,6 +12,7 @@ iris.arff
 dermatology.arff
 haberman.arff
 vehicle.arff
+vowel.arff
 sonar.arff
 wine.arff
 german.arff

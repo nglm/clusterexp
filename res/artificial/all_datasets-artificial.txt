@@ -1,3 +1,4 @@
+mopsi-finland.arff
 long3.arff
 zelnik1.arff
 insect.arff
@@ -12,6 +13,7 @@ disk-4600n.arff
 aggregation.arff
 donutcurves.arff
 dartboard1.arff
+s-set3.arff
 disk-1000n.arff
 complex8.arff
 ds4c2sc8.arff
@@ -45,14 +47,17 @@ spherical_4_3.arff
 golfball.arff
 dense-disk-5000.arff
 twodiamonds.arff
+birch-rg3.arff
 donut2.arff
 cuboids.arff
 elliptical_10_2.arff
 sizes3.arff
+D31.arff
 compound.arff
 long1.arff
 long2.arff
 curves2.arff
+s-set4.arff
 disk-5000n.arff
 donut1.arff
 2d-10c.arff
@@ -71,6 +76,7 @@ spherical_5_2.arff
 DS-850.arff
 disk-6000n.arff
 donut3.arff
+fourty.arff
 2sp2glob.arff
 disk-3000n.arff
 lsun.arff
@@ -78,10 +84,12 @@ diamond9.arff
 zelnik4.arff
 2d-4c-no4.arff
 st900.arff
+birch-rg2.arff
 shapes.arff
 ds2c2sc13.arff
 3MC.arff
 cluto-t7-10k.arff
+birch-rg1.arff
 square3.arff
 atom.arff
 curves1.arff
@@ -99,6 +107,7 @@ spherical_6_2.arff
 spiral.arff
 triangle1.arff
 rings.arff
+mopsi-joensuu.arff
 s-set2.arff
 engytime.arff
 flame.arff
