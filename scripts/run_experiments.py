@@ -11,6 +11,7 @@ import sys, os
 import time
 import json
 from mpl_toolkits.mplot3d import Axes3D
+import gc
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.compute_scores import f_pdist
@@ -37,7 +38,7 @@ def define_globals(source_number: int = 0, local=True, use_DTW=False):
     :type use_DTW: bool, optional
     """
     global DATA_SOURCE
-    global RES_DIR, PATH, FNAME_DATASET_EXPS, FNAME_DATASET_ALL
+    global RES_DIR, PATH, FNAME_DATASET_EXPS
     global SEED, K_MAX, PATH_UCR, DTW
 
     sources = ["artificial", "real-world", "UCR"]
@@ -46,8 +47,7 @@ def define_globals(source_number: int = 0, local=True, use_DTW=False):
     RES_DIR = f'./res/{DATA_SOURCE}/'
 
     PATH = f"{URL_ROOT}{DATA_SOURCE}/"
-    FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
-    FNAME_DATASET_ALL = f"all_datasets-{DATA_SOURCE}.txt"
+    FNAME_DATASET_EXPS = f"datasets_experiments_theory-{DATA_SOURCE}.txt"
 
     SEED = 221
     # In UCR, the max number of label in 15 so we can reduce K_MAX
@@ -175,79 +175,82 @@ def main(run_number: int = 0):
     sys.stdout = fout
 
     # --------- Get datasets and labels -----------
-    with open(RES_DIR + FNAME_DATASET_ALL) as f:
-        all_datasets = f.read().splitlines()
+    with open(RES_DIR + FNAME_DATASET_EXPS) as f:
+        datasets_exp = f.read().splitlines()
 
     l_data = []
     l_labels = []
     l_n_labels = []
     l_fname = []
-    # Keep only datasets with known K and no missing values
-    l_fname_all = [
-        f for f in all_datasets
-        if f not in UNKNOWN_K + INVALID
-    ]
-    for fname in l_fname_all:
+
+    for fname in datasets_exp:
         #print(fname, flush=True)
         if DATA_SOURCE == "UCR":
             f = f"{PATH_UCR}{get_fname(fname, data_source=DATA_SOURCE)}"
             data, labels, n_labels, _ = get_data_labels_UCR(f, path=PATH)
         else:
             data, labels, n_labels, meta = get_data_labels(fname, path=PATH)
+
         N = len(data)
-        if N <= 10000 and n_labels is not None and n_labels <= 20:
-            l_data.append(data)
-            l_labels.append(labels)
-            l_n_labels.append(n_labels)
-            l_fname.append(fname)
-            print(
-                "Dataset: {}  | Shape: {}  | #labels: {}".format(
-                    fname, data.shape, n_labels
-                ), flush=True
-            )
-    # Write dataset list that is kept in the end
-    write_list_datasets(RES_DIR + FNAME_DATASET_EXPS, l_fname)
+        l_data.append(data)
+        l_labels.append(labels)
+        l_n_labels.append(n_labels)
+        l_fname.append(fname)
+        print(
+            "Dataset: {}  | Shape: {}  | #labels: {}".format(
+                fname, data.shape, n_labels
+            ), flush=True
+        )
 
     # ------ Run experiments for all datasets and all scores -----------
     scaler = StandardScaler()
     scaler_name = "StandardScaler"
 
-    if run_number == 0:
+    model_classes = []
+    model_names = []
+    model_kws = []
 
-        model_classes = [
-            AgglomerativeClustering, AgglomerativeClustering,
+    if not DTW:
+        # --------------------- Agglomerative --------------------------
+        if run_number == 0:
+
+            model_classes = [
+                AgglomerativeClustering, AgglomerativeClustering,
+                ]
+            model_names = [
+                "AgglomerativeClustering-Single",
+                "AgglomerativeClustering-Average",
             ]
-        model_names = [
-            "AgglomerativeClustering-Single", "AgglomerativeClustering-Average",
-        ]
-        model_kws = [
-            {"linkage" : "single"},
-            {"linkage" : "average"},
-        ]
-    elif run_number == 1:
+            model_kws = [
+                {"linkage" : "single"},
+                {"linkage" : "average"},
+            ]
+        # ----------------------- KMedoids -----------------------------
+        elif run_number == 1:
 
-        model_classes = [KMedoids]
-        model_names = ["KMedoids", ]
-        model_kws = [{}]
-
-    elif run_number == 2:
-        if DTW:
-            model_classes = [ TimeSeriesKMeans ]
-            model_names = [ "TimeSeriesKMeans" ]
+            model_classes = [KMedoids]
+            model_names = ["KMedoids"]
             model_kws = [{}]
-        else:
+
+        # ----------------------- KMeans -------------------------------
+        elif run_number == 2:
+
             model_classes = [ KMeans ]
             model_names = [ "KMeans" ]
             model_kws = [{}]
-    elif run_number == 4:
-        model_classes = []
-        model_names = []
-        model_kws = []
 
-        if not DTW:
-            model_classes += [ SpectralClustering]
-            model_names += ["SpectralClustering"]
-            model_kws += [{}]
+        # ------------------- Spectral Clustering ----------------------
+        elif run_number == 3:
+            model_classes = [ SpectralClustering]
+            model_names = ["SpectralClustering"]
+            model_kws = [{}]
+
+    else:
+        # ------------------ Time Series KMeans ------------------------
+        if run_number == 2:
+            model_classes = [ TimeSeriesKMeans ]
+            model_names = [ "TimeSeriesKMeans" ]
+            model_kws = [{}]
 
     t_start = time.time()
     for i_model, model_class in enumerate(model_classes):
@@ -259,31 +262,44 @@ def main(run_number: int = 0):
         for i, (X, y) in enumerate(zip(l_data, l_labels)):
 
             print(f"\n{l_fname[i]}", flush=True)
-            exp = experiment(
-                X,
-                n_clusters_range=[i for i in range(K_MAX)],
-                model_class=model_class,
-                model_kw=model_kw,
-                scaler=scaler,
-            )
-            exp["dataset"] = l_fname[i]
-            exp["k"] = l_n_labels[i]
-            exp["scaler"] = scaler_name
-            exp["model"] = model_name
-            exp["model_kw"] = {k : str(v) for k, v in model_kw.items()}
-            exp['seed'] = SEED
-            exp['DTW'] = DTW
 
-            # save experiment information as json
+            # ---------- prepare  experiments files -------------
             os.makedirs(f"{RES_DIR}{model_name}_{DTW}", exist_ok=True)
             exp_fname = "{}{}_{}/{}".format(
                 RES_DIR, model_name, DTW, l_fname[i]
             )
-            exp["fname"] = exp_fname
-            json_str = json.dumps(exp, indent=2)
+            exp_fname_json = f"{exp_fname}.json"
 
-            with open(exp_fname + ".json", 'w', encoding='utf-8') as f:
-                f.write(json_str)
+            # Don't run again if the experiment file already exists
+            if os.path.isfile(exp_fname_json):
+                print(f"{exp_fname_json} already exists.")
+
+            # ----------------- Run experiment -------------------
+            else:
+                exp = experiment(
+                    X,
+                    n_clusters_range=[i for i in range(K_MAX)],
+                    model_class=model_class,
+                    model_kw=model_kw,
+                    scaler=scaler,
+                )
+                exp["dataset"] = l_fname[i]
+                exp["k"] = l_n_labels[i]
+                exp["scaler"] = scaler_name
+                exp["model"] = model_name
+                exp["model_kw"] = {k : str(v) for k, v in model_kw.items()}
+                exp['seed'] = SEED
+                exp['DTW'] = DTW
+                exp["fname"] = exp_fname
+
+                # ------- save experiment information as json ----------
+
+                json_str = json.dumps(exp, indent=2)
+                with open(exp_fname_json, 'w', encoding='utf-8') as f:
+                    f.write(json_str)
+
+            # Try to limit memory usage...
+            gc.collect()
 
     t_end = time.time()
     dt = t_end - t_start
@@ -297,10 +313,10 @@ def run_process(source_number, run_number, local, use_DTW):
 if __name__ == "__main__":
     # source_numbers = range(3)
     source_numbers = [2]
-    run_numbers = [2, 4]
+    run_numbers = [3]
 
     local = bool(int(sys.argv[1]))
-    DTWs = [False]
+    DTWs = [False, True]
 
     # All combination with DTW=False
     if False in DTWs:
@@ -324,10 +340,5 @@ if __name__ == "__main__":
     for process in processes:
         process.join()
 
-    # source_number = int(sys.argv[2])
-    # run_number = int(sys.argv[3])
-
-    # define_globals(source_number)
-    # main(run_number)
 
 

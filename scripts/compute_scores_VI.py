@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from math import ceil, floor
 from typing import List
 import os
+import gc
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.scores import SCORES
@@ -60,7 +61,7 @@ def define_globals(source_number: int = 0, local=True):
     RES_DIR = f'./res/{DATA_SOURCE}/'
 
     PATH = f"{URL_ROOT}{DATA_SOURCE}/"
-    FNAME_DATASET_EXPS = f"datasets_experiments-{DATA_SOURCE}.txt"
+    FNAME_DATASET_EXPS = f"datasets_experiments_theory-{DATA_SOURCE}.txt"
 
     SEED = 221
     DTW = None
@@ -108,6 +109,13 @@ def plot_clusters(
         else:
             return None
 
+        # Add predefined title
+        ax.set_title(str(titles[i_score]))
+
+        # Sometimes there are no clusters selected because all scores were None
+        if clusterings_selected[i_score] is None:
+            continue
+
         # ------------------ Plot clusters one by one ------------------
         for i_label, cluster in enumerate(clusterings_selected[i_score]):
             if d == 1:
@@ -119,8 +127,6 @@ def plot_clusters(
                     data[cluster, 0], data[cluster, 1], data[cluster, 2], s=1
                 )
 
-        # Add predefined title
-        ax.set_title(str(titles[i_score]))
     return fig
 
 def plot_true(
@@ -282,15 +288,19 @@ def compute_scores_VI(
                 scaler=StandardScaler(),
             )
 
+            # Sometimes there is no k_selected because all scores were None
             k_selected = score.select(scores)[0]
-            clusterings_selected.append(exp["clusterings"][k_selected])
+            if k_selected is None:
+                clusterings_selected.append(None)
+            else:
+                clusterings_selected.append(exp["clusterings"][k_selected])
             t_end = time.time()
             dt = t_end - t_start
 
             # Print and store score information
             for k in exp["clusterings"]:
                 print(k, scores[0][k], flush=True)
-            print("Selected k {}".format(k_selected), flush=True)
+            print(f"Selected k: {k_selected} | True k: {k_true}", flush=True)
             print('Code executed in %.2f s' %(dt))
 
             exp["CVIs"][str(score)] = {
@@ -299,9 +309,14 @@ def compute_scores_VI(
                 "time" : dt,
             }
 
-            ax_titles.append(
-                f"{score}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
-            )
+            if k_selected is None:
+                ax_titles.append(
+                    f"{score}, No k could be selected"
+                )
+            else:
+                ax_titles.append(
+                    f"{score}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
+                )
 
     # ---------------- Plot selected clusterings -----------------------
     if fig is not None:
@@ -350,27 +365,38 @@ def main():
         ]
 
         for fname in fnames:
+
+            # ----- prepare figures and experiments files -----
             exp = load_json(f"{RES_DIR}{fname}.json")
-
             model_name = exp["model"]
-            k_true = exp["k"]
 
-            exp, fig = compute_scores_VI(X, y, true_clusters, exp)
-
-            # ----- save figures and experiments -----
             os.makedirs(f"{RES_DIR}{model_name}_{DTW}", exist_ok=True)
             exp_fname = f"{RES_DIR}{model_name}_{DTW}/{d}"
+            exp_fname_json = f"{exp_fname}_scored.json"
+            # Don't run again if the score file already exists
+            if os.path.isfile(exp_fname_json):
+                print(f"{exp_fname_json} already exists.")
 
-            # Save figure if it exists ("artificial" and d<=3)
-            if fig is not None:
-                figtitle = f"{d} - {model_name} - True k={k_true}"
-                fig.suptitle(figtitle)
-                fig.savefig(exp_fname + ".png")
+            # ----------- Compute scores and VI ---------------
+            else:
 
-            # Save experiment information as json
-            json_str = json.dumps(exp, indent=2)
-            with open(exp_fname + "_scored" + ".json", 'w', encoding='utf-8') as f:
-                f.write(json_str)
+                exp, fig = compute_scores_VI(X, y, true_clusters, exp)
+
+                # Save figure if it exists ("artificial" and d<=3)
+                if fig is not None:
+                    k_true = exp["k"]
+                    figtitle = f"{d} - {model_name} - True k={k_true}"
+                    fig.suptitle(figtitle)
+                    fig.savefig(exp_fname + ".png")
+
+                # Save experiment information as json
+                json_str = json.dumps(exp, indent=2)
+                with open(exp_fname_json, 'w', encoding='utf-8') as f:
+                    f.write(json_str)
+
+            # Try to limit memory usage...
+            gc.collect()
+
 
     t_end = time.time()
     dt = t_end - t_start
