@@ -9,37 +9,25 @@ from datetime import date
 import sys
 import json
 import time
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
-from math import ceil, floor
 from typing import List
 import os
 import gc
 
-from pycvi.cluster import generate_all_clusterings
-from pycvi.scores import SCORES
+from pycvi.cvi import CVIs
 from pycvi.compute_scores import compute_all_scores
-from pycvi.vi import variational_information
+from pycvi.vi import variation_information
 
 from clusterexp.utils import (
     get_data_labels, get_list_datasets,
     get_list_exp, URL_ROOT, load_json, get_fname, get_data_labels_UCR,
     URL_ROOT, PATH_UCR_LOCAL, PATH_UCR_REMOTE
 )
+from clusterexp.plots import (
+    plot_clusters, plot_true
+)
 
 import warnings
 warnings.filterwarnings("ignore")
-
-# --------  Adapt the figures to the total number of scores ------------
-N_SCORES = 0
-for s in SCORES:
-    for score_type in s.score_types:
-        N_SCORES += 1
-
-N_ROWS = ceil(N_SCORES / 5)
-N_COLS = 5
-FIGSIZE = (4*N_COLS, ceil(2.5*N_ROWS))
-# ----------------------------------------------------------------------
 
 def define_globals(source_number: int = 0, local=True):
     """
@@ -71,147 +59,6 @@ def define_globals(source_number: int = 0, local=True):
     else:
         PATH_UCR = PATH_UCR_REMOTE
 
-
-def plot_clusters(
-    data: np.ndarray,
-    clusterings_selected: List[List[List[int]]],
-    fig,
-    titles: List[str],
-):
-    """
-    Add one plot per score with their corresponding selected clustering
-
-    The fig should already contain 2 plots first with the true
-    clusterings, and the clusterings obtained with k_true.
-
-    :param data: Original data, corresponding to a benchmark dataset
-    :type data: np.ndarray, shape (N, d)
-    :param clusterings_selected: A list of n_score clusterings.
-    :type clusterings_selected: List[List[List[int]]]
-    :param fig: Figure where all the plots are (including 2 about the
-        true clusters)
-    :type fig:
-    :param titles: List of titles for each score
-    :type titles: List[str]
-    :return: a figure with one clustering per score (+2 plots first)
-    :rtype:
-    """
-    (N, d) = data.shape
-    # -------  Plot the clustering selected by a given score -----------
-    for i_score in range(len(clusterings_selected)):
-
-        # ------------- Find the ax corresponding to the score ---------
-        if d <= 2:
-            ax = fig.axes[i_score+2] # i+2 because there are 2 plots already
-        # Some datasets are in 3D
-        elif d == 3:
-            ax = fig.add_subplot(N_ROWS, N_COLS, i_score+3, projection='3d')
-        else:
-            return None
-
-        # Add predefined title
-        ax.set_title(str(titles[i_score]))
-
-        # Sometimes there are no clusters selected because all scores were None
-        if clusterings_selected[i_score] is None:
-            continue
-
-        # ------------------ Plot clusters one by one ------------------
-        for i_label, cluster in enumerate(clusterings_selected[i_score]):
-            if d == 1:
-                ax.scatter(np.zeros_like(data[cluster, 0]), data[cluster, 0], s=1)
-            elif d == 2:
-                ax.scatter(data[cluster, 0], data[cluster, 1], s=1)
-            elif d == 3:
-                ax.scatter(
-                    data[cluster, 0], data[cluster, 1], data[cluster, 2], s=1
-                )
-
-    return fig
-
-def plot_true(
-    data: np.ndarray,
-    labels: np.ndarray,
-    clusterings: List[List[List[int]]],
-):
-    """
-    Plot the true clustering and the clustering obtained with k_true
-
-    Create also the whole figure that will be used to plot the
-    clusterings selected by each score.
-
-    :param data: Original data, corresponding to a benchmark dataset
-    :type data: np.ndarray, shape (N, d)
-    :param labels: True labels
-    :type labels: np.ndarray
-    :param clusterings: The clusterings obtained with k_true
-    :type clusterings: List[List[List[int]]]
-    :return: _description_
-    :rtype: _type_
-    """
-
-    (N, d) = data.shape
-
-    # ----------------------- Create figure ----------------
-    if d <= 2:
-        fig, axes = plt.subplots(
-            nrows=N_ROWS, ncols=N_COLS, sharex=True, sharey=True,
-            figsize=FIGSIZE, tight_layout=True
-        )
-    # Some datasets are in 3D
-    elif d == 3:
-        fig = plt.figure(figsize=FIGSIZE, tight_layout=True)
-    else:
-        return None
-
-    # ----------------------- Labels ----------------
-    if labels is None:
-        labels = np.zeros(N)
-    classes = np.unique(labels)
-    n_labels = len(classes)
-    if n_labels == N:
-        labels = np.zeros(N)
-        n_labels = 1
-
-    # ------------------- variables for the 2 axes ----------------
-    clusters = [
-        # The true clustering
-        [labels == classes[i] for i in range(n_labels)],
-        # The clustering obtained with k_true
-        clusterings
-    ]
-    ax_titles = [
-        "True labels, k={}".format(n_labels),
-        "Clustering assuming k={}".format(n_labels),
-    ]
-
-    # ------ True clustering and clustering assuming n_labels ----------
-    for i_ax in range(2):
-        if d <= 2:
-            ax = fig.axes[i_ax]
-        elif d == 3:
-            ax = fig.add_subplot(N_ROWS, N_COLS, i_ax+1, projection='3d')
-
-        # ---------------  Plot clusters one by one --------------------
-        for i in range(n_labels):
-
-            c = clusters[i_ax][i]
-            if d == 1:
-                ax.scatter(
-                    np.zeros_like(data[c, 0]), data[c, 0], s=1
-                )
-            elif d == 2:
-                ax.scatter(data[c, 0], data[c, 1], s=1)
-            elif d == 3:
-                ax.scatter(
-                    data[c, 0], data[c, 1], data[c, 2], s=1
-                )
-
-        # Add title
-        ax.set_title(ax_titles[i_ax])
-
-    return fig
-
 def compute_scores_VI(
     X: np.ndarray,
     y: np.ndarray,
@@ -231,7 +78,7 @@ def compute_scores_VI(
     :type exp: dict
     :return: The updated experiment (with scores and VI) and a figure
         with the true clustering, the clustering obtained with k_true
-        and the selected clustering for each score
+        and the selected clustering for each cvi
     :rtype:
     """
     # all clusterings of this experiment
@@ -258,7 +105,7 @@ def compute_scores_VI(
         if clustering is None:
             VIs[k] = None
         else:
-            VIs[k] = variational_information(true_clusters, clustering)
+            VIs[k] = variation_information(true_clusters, clustering)
         print(k, VIs[k], flush=True)
 
     # Add VI to the exp file dict
@@ -267,10 +114,10 @@ def compute_scores_VI(
     # ------------------------ Compute scores --------------------------
     clusterings_selected = []
     exp["CVIs"] = {}
-    for s in SCORES:
-        for score_type in s.score_types:
-            score = s(score_type=score_type)
-            print(" ================ {} ================ ".format(score))
+    for s in CVIs:
+        for cvi_type in s.cvi_types:
+            cvi = s(cvi_type=cvi_type)
+            print(" ================ {} ================ ".format(cvi))
             t_start = time.time()
 
             # Dirty workaround because old files don't have the DTW key
@@ -281,7 +128,7 @@ def compute_scores_VI(
                 exp["DTW"] = DTW
 
             scores = compute_all_scores(
-                score,
+                cvi,
                 X,
                 [exp["clusterings"]],
                 DTW= DTW,
@@ -289,7 +136,7 @@ def compute_scores_VI(
             )
 
             # Sometimes there is no k_selected because all scores were None
-            k_selected = score.select(scores)[0]
+            k_selected = cvi.select(scores)[0]
             if k_selected is None:
                 clusterings_selected.append(None)
             else:
@@ -297,13 +144,13 @@ def compute_scores_VI(
             t_end = time.time()
             dt = t_end - t_start
 
-            # Print and store score information
+            # Print and store cvi information
             for k in exp["clusterings"]:
                 print(k, scores[0][k], flush=True)
             print(f"Selected k: {k_selected} | True k: {k_true}", flush=True)
             print('Code executed in %.2f s' %(dt))
 
-            exp["CVIs"][str(score)] = {
+            exp["CVIs"][str(cvi)] = {
                 "scores" : scores[0],
                 "selected" : k_selected,
                 "time" : dt,
@@ -311,11 +158,11 @@ def compute_scores_VI(
 
             if k_selected is None:
                 ax_titles.append(
-                    f"{score}, No k could be selected"
+                    f"{cvi}, No k could be selected"
                 )
             else:
                 ax_titles.append(
-                    f"{score}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
+                    f"{cvi}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
                 )
 
     # ---------------- Plot selected clusterings -----------------------
@@ -373,7 +220,7 @@ def main():
             os.makedirs(f"{RES_DIR}{model_name}_{DTW}", exist_ok=True)
             exp_fname = f"{RES_DIR}{model_name}_{DTW}/{d}"
             exp_fname_json = f"{exp_fname}_scored.json"
-            # Don't run again if the score file already exists
+            # Don't run again if the cvi file already exists
             if os.path.isfile(exp_fname_json):
                 print(f"{exp_fname_json} already exists.")
 

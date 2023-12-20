@@ -95,7 +95,7 @@ ILL_FORMATED = [
     ]
 ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
 
-def arff_from_github(url, verbose=False):
+def arff_from_github(url, verbose=True):
     """
     Returns data as arff and metadata if no exceptions were found.
 
@@ -237,10 +237,16 @@ def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
     Give the real number of labels and labels in case of n_labels = N
     """
     N = len(labels)
-    n_labels = len(np.unique(labels))
+    classes = np.unique(labels)
+    map_classes = {c:i for i,c in enumerate(classes)}
+    n_labels = len(classes)
     if n_labels == N:
         n_labels = 1
-        labels = np.zeros(N)
+        labels = np.zeros_like(labels, dtype=int)
+    else:
+        labels = np.array(
+            [map_classes[label] for label in labels],
+            dtype=int)
     return labels, n_labels
 
 def get_data_labels(
