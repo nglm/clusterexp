@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
-"""
-For each score find the number of successful datasets (weighted with the VI)
-For each dataset find the number of successful scores (weighted with the VI)
-
-Have the same pipeline with the UCR archive.
-"""
 
 import os
 import sys
 import numpy as np
 import json
 from datetime import date
-from pycvi.scores import SCORES
+from pycvi.cvi import CVIs
 from math import exp
 
 from clusterexp.utils import (
@@ -30,10 +24,28 @@ FNAME_ANAL_DATASETS = f"analysis_datasets-{DATA_SOURCE}"
 # Store information score per score
 FNAME_ANAL_SCORES = f"analysis_scores-{DATA_SOURCE}"
 
+def f_quality(VI):
+    return exp(-2*VI)
+
 def main():
     """
     Analyse the experiments by making statistics on each dataset and
     each score.
+
+    For each score find:
+    - the number of successful datasets
+    - the number of successful datasets weighted by the quality
+    - the quality of the successful dataset
+    - the max quality that could have been obtained with the given
+    clusterings.
+
+    For each dataset find the number of successful scores (weighted with
+    the VI)
+    - the number of successful scores
+    - the number of successful scores weighted by the quality
+    - the quality of the successful scores
+    - the max quality that could have been obtained with the given
+    clusterings.
 
     Note that if a dataset has few successes and/or has a very low
     accumulated weighted VI, then it means that this dataset was just
@@ -69,13 +81,14 @@ def main():
             "exps" : {},          # One dict per experience
             "scores" : {},        # One dict per score
             "k_true" : None,      # k_true of this dataset
+            "k_best" : None,      # k that minimises VI for this dataset
         }
 
         # Initialise the accumulators on this dataset for each score
         # Here we gather information on how good this CVI did on this
         # dataset, combining the info of all clustering methods
-        for s in SCORES:
-            for score_type in s.score_types:
+        for s in CVIs:
+            for cvi_type in s.cvi_types:
                 res_datasets[d]["scores"][str(score)] = {
                     "acc" : 0,
                     "weighted_acc" : 0,
@@ -83,6 +96,8 @@ def main():
                     "quality" : 0,
                     "max_quality" : 0,
                     "VIs_selected" : [], # VI of k_selected with this score
+                    "VIs_true" : [],     # VI of k_true with this score
+                    "VIs_best" : [],     # best reachable VI
                     "success" : [],
                 }
 
@@ -95,34 +110,52 @@ def main():
 
         for fname in fnames:
 
-            # ------ Initialisation of experience ------
-
             with open(RES_DIR + fname + ".json") as f_json:
                 exp = json.load(f_json)
 
+            # Change None to np.inf, which results in quality=0
+            VIS_no_None = {
+                k: vi if vi is not None else np.inf
+                for k, vi in exp["VIs"].items()
+            }
             k_true = exp["k"]
-            VI_true = exp["VIs"][str(k_true)]
+            k_best = min(VIS_no_None, key=VIS_no_None.get)
 
+            VI_true = VIS_no_None[k_true]
+            VI_best = VIS_no_None[k_best]
+
+            # ------ Initialisation of experience ------
             res_exp = {
                 "acc" : 0,
                 "weighted_acc" : 0,
                 "VI_true" : VI_true,
+                "VI_best" : VI_best,
             }
 
             res_datasets[d]["k_true"] = k_true
+            res_datasets[d]["k_best"] = k_best
+
+            k_true_quality = f_quality(VIS_no_None[k_true])
+            max_quality = f_quality(min(VIS_no_None))
+
+            res_datasets[d]["k_true_quality"] = k_true_quality
+            res_datasets[d]["max_quality"] = max_quality
 
             # ------ Update of experience ------
 
             # Update weighted accuracy for each score of this experiment
-            for s in SCORES:
-                for score_type in s.score_types:
-                    score = s(score_type=score_type)
+            for s in CVIs:
+                for cvi_type in s.cvi_types:
+                    score = s(cvi_type=cvi_type)
                     d_score = res_datasets[d]["scores"][str(score)]
 
                     # Find selected VI of the selected k
                     k_selected = exp["CVIs"][str(score)]["selected"]
-                    VI_selected = exp["VIs"][str(k_selected)]
+                    VI_selected = VIS_no_None[k_selected]
+
                     d_score["VIs_selected"].append(VI_selected)
+                    d_score["VIs_true"].append(VI_true)
+                    quality_selected = f_quality(VI_selected)
 
                     # Compute weighted accuracy for this score
                     success = k_selected == k_true
@@ -130,15 +163,23 @@ def main():
                     if success:
                         d_score["acc"] += 1
                         res_exp["acc"] += 1
-                    d_score["weighted_acc"] += exp(-2*VI_selected)
-                    res_exp["weighted_acc"] += exp(-2*VI_selected)
+                        d_score["weighted_acc"] += quality_selected
+                        res_exp["weighted_acc"] += quality_selected
+
+                    d_score["quality"] += quality_selected
+                    res_exp["quality"] += quality_selected
+
+                    # True and max quality that we could obtain with this
+                    # clustering algorithm
+                    d_score["k_true_quality"] += k_true_quality
+                    d_score["max_quality"] += max_quality
 
             # ------ Update of dataset ------
 
             # Update weighted accuracy for this dataset
             res_datasets[d]["acc"] += res_exp["acc"]
             res_datasets[d]["weighted_acc"] += res_exp["weighted_acc"]
-            res_datasets[d]["max_acc"] += exp(-2*VI_true)
+            res_datasets[d]["quality"] += res_exp["quality"]
             res_datasets[d]["exps"][fname] = res_exp
 
     # ================= Analysis Scores =================
@@ -151,8 +192,8 @@ def main():
     # ---------------- Initialisation of scores ------------------
 
     # Initialise the accumulators for each score
-    for s in SCORES:
-        for score_type in s.score_types:
+    for s in CVIs:
+        for cvi_type in s.cvi_types:
             res_scores["scores"][str(score)] = {
                 # +1 for each success (regardless of quality)
                 "acc" : 0,
@@ -167,9 +208,9 @@ def main():
 
         # Update accumulators of res_scores after going through all
         # experiments on this dataset
-        for s in SCORES:
-            for score_type in s.score_types:
-                score = s(score_type=score_type)
+        for s in CVIs:
+            for cvi_type in s.cvi_types:
+                score = s(cvi_type=cvi_type)
 
                 # Shorter variable names for dicts
                 d = res_scores["scores"][str(score)]
