@@ -5,7 +5,7 @@ import numpy as np
 from sklearn.cluster import AgglomerativeClustering, KMeans, SpectralClustering
 from sklearn.preprocessing import StandardScaler
 from sklearn_extra.cluster import KMedoids
-from tslearn.clustering import TimeSeriesKMeans
+from aeon.clustering import TimeSeriesKMeans
 from datetime import date
 import sys, os
 import time
