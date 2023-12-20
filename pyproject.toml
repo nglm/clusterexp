@@ -6,12 +6,17 @@ authors = ["Natacha, Galmiche <natacha.galmiche@uib.no>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.9"
-persigraph = {git = "https://github.com/nglm/persigraph.git",  branch = "master"}
+python = ">=3.8,<3.12"
 pycvi = {git = "https://github.com/nglm/pycvi.git",  branch = "master"}
-pandas = "^2.0.3"
-jupyter = "^1.0.0"
 scikit-learn-extra = "^0.3.0"
+matplotlib = "^3.7"
+
+[tool.poetry.group.notebook]
+optional = true
+
+[tool.poetry.group.notebook.dependencies]
+ipykernel = "^6.27.1"
+pandas = "^2.0.3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
