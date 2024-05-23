@@ -37,15 +37,18 @@ UNKNOWN_K = [
     "birch-rg3.arff",
     "mopsi-finland.arff", "mopsi-joensuu.arff",
     "s-set3.arff", "s-set4.arff",
+
     # real-world
 ]
 
 # Too many labels
 # (More than 20 in non-time series data, more than 15 in UCR)
 TOO_MANY_LABELS = [
+    # artificial
+    "D31.arff", "fourty.arff",
+
     # real-world
-    "arrhythmia.arff", "water-treatment.arff", "wdbc.arff",
-    "dermatology.arff", "sonar.arff", "german.arff", "iono.arff",
+    "cpu.arff", "letter.arff",
 
     # UCR
     "PigArtPressure", "FiftyWords", "Adiac", "PigCVP", "Phoneme",
@@ -54,8 +57,8 @@ TOO_MANY_LABELS = [
     "Crop", "NonInvasiveFetalECGThorax2", "ShapesAll",
 ]
 
-# Too many labels
-# (More than 20 in non-time series data, more than 15 in UCR)
+# Too many samples
+# (More than 10000)
 TOO_MANY_SAMPLES = [
     # artificial
     "mopsi-finland.arff", "birch-rg3.arff", "birch-rg2.arff",
@@ -95,7 +98,7 @@ ILL_FORMATED = [
     ]
 ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
 
-def arff_from_github(url, verbose=True):
+def arff_from_github(url, verbose=False):
     """
     Returns data as arff and metadata if no exceptions were found.
 
@@ -110,8 +113,7 @@ def arff_from_github(url, verbose=True):
             arff_data = io.StringIO(response.read().decode('utf-8'))
             data, meta = arff.loadarff(arff_data)
     except Exception as ex:
-        if verbose:
-            print(ex, flush=True)
+        print(ex, flush=True)
         return None, ex
     return data, meta
 
@@ -177,11 +179,17 @@ def print_heads(
                 else:
                     n_labels = None
 
+            if labeled:
+                too_many_labels = n_labels > n_labels_max
+            else:
+                too_many_labels = False
+
+
             msg = (
                 f"Shape: {shape}   |   n_labels: {n_labels}\n" +
                 f"Labeled:         {labeled}\n" +
                 f"Has NA values:   {has_na}\n" +
-                f"Too many labels: {n_labels>n_labels_max}\n" +
+                f"Too many labels: {too_many_labels}\n" +
                 f"Too many samples:{shape[0]>n_samples_max}"
             )
             print(msg)
