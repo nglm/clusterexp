@@ -49,7 +49,6 @@ donut2.arff
 cuboids.arff
 elliptical_10_2.arff
 sizes3.arff
-D31.arff
 compound.arff
 long1.arff
 long2.arff
@@ -72,7 +71,6 @@ spherical_5_2.arff
 DS-850.arff
 disk-6000n.arff
 donut3.arff
-fourty.arff
 2sp2glob.arff
 disk-3000n.arff
 lsun.arff
