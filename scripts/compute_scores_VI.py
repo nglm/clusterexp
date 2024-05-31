@@ -88,13 +88,7 @@ def compute_scores_VI(
     k_true = exp["k"]
     # best clusters
     best_clusters = clusterings[k_true]
-
-    # ---------------- Plot true clusters ------------------------------
     ax_titles = []
-    if DATA_SOURCE == "artificial":
-        fig = plot_true(X, y, best_clusters)
-    else:
-        fig = None
 
     # ------------------------ Compute VIs ------------------------------
     # Compute VI between the true clustering and each clustering
@@ -166,6 +160,13 @@ def compute_scores_VI(
                 "time" : dt,
             }
 
+    # ---------------- Plot true clusters ------------------------------
+    if DATA_SOURCE == "artificial":
+        fig = plot_true(
+            X, y, best_clusters, n_plots=len(clusterings_selected)+2
+        )
+    else:
+        fig = None
     # ---------------- Plot selected clusterings -----------------------
     if fig is not None:
         fig = plot_clusters(X, clusterings_selected, fig, ax_titles)
