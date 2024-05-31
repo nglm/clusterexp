@@ -132,7 +132,7 @@ def compute_scores_VI(
             scores = compute_all_scores(
                 cvi,
                 X,
-                [exp["clusterings"]],
+                exp["clusterings"],
                 DTW= DTW,
                 scaler=StandardScaler(),
             )
@@ -258,6 +258,12 @@ def run_process(source_number, local):
 if __name__ == "__main__":
     CLI=argparse.ArgumentParser()
     CLI.add_argument(
+        "--local", # Drop `--` for positional/required params
+        nargs=1,  # creates a list of one element
+        type=int,
+        default=0,  # default if nothing is provided
+    )
+    CLI.add_argument(
         "--source_num", # Drop `--` for positional/required params
         nargs="*",  # 0 or more values expected => creates a list
         type=int,
@@ -265,8 +271,8 @@ if __name__ == "__main__":
     )
     args = CLI.parse_args()
 
+    local = bool(int(args.local[0]))
     source_numbers = args.source_num
-    local = bool(int(sys.argv[1]))
 
     processes = [
         Process(target=run_process, args=(i, local))

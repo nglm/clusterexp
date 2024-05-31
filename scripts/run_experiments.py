@@ -315,10 +315,16 @@ if __name__ == "__main__":
     CLI=argparse.ArgumentParser()
 
     CLI.add_argument(
+        "--local", # Drop `--` for positional/required params
+        nargs=1,  # creates a list of one element
+        type=int,
+        default=0,  # default if nothing is provided
+    )
+    CLI.add_argument(
         "--run_num", # Drop `--` for positional/required params
         nargs="*",  # 0 or more values expected => creates a list
         type=int,
-        default=[0, 1, 2],  # default if nothing is provided
+        default=[0, 1, 2, 3],  # default if nothing is provided
     )
     CLI.add_argument(
         "--source_num", # Drop `--` for positional/required params
@@ -328,12 +334,12 @@ if __name__ == "__main__":
     )
     args = CLI.parse_args()
 
+    local = bool(int(args.local[0]))
     # source_numbers = range(3)
     source_numbers = args.source_num
     # run_numbers = range(4)
     run_numbers = args.run_num
 
-    local = bool(int(sys.argv[1]))
     DTWs = [False, True]
 
     # All combination with DTW=False
