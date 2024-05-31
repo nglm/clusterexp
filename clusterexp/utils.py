@@ -184,7 +184,6 @@ def print_heads(
             else:
                 too_many_labels = False
 
-
             msg = (
                 f"Shape: {shape}   |   n_labels: {n_labels}\n" +
                 f"Labeled:         {labeled}\n" +

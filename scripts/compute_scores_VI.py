@@ -12,10 +12,12 @@ import time
 from typing import List
 import os
 import gc
+import argparse
 
 from pycvi.cvi import CVIs
 from pycvi.compute_scores import compute_all_scores
 from pycvi.vi import variation_information
+from pycvi.exceptions import SelectionError
 
 from clusterexp.utils import (
     get_data_labels, get_list_datasets,
@@ -136,34 +138,33 @@ def compute_scores_VI(
             )
 
             # Sometimes there is no k_selected because all scores were None
-            k_selected = cvi.select(scores)[0]
-            if k_selected is None:
+            try:
+                k_selected = cvi.select(scores)
+            except SelectionError as e:
+                k_selected = None
                 clusterings_selected.append(None)
+                ax_titles.append(
+                    f"{cvi}, No clustering could be selected."
+                )
             else:
                 clusterings_selected.append(exp["clusterings"][k_selected])
+                ax_titles.append(
+                    f"{cvi}, k={k_selected}, VI={VIs[k_selected]:.4f}"
+                )
             t_end = time.time()
             dt = t_end - t_start
 
             # Print and store cvi information
             for k in exp["clusterings"]:
-                print(k, scores[0][k], flush=True)
+                print(k, scores[k], flush=True)
             print(f"Selected k: {k_selected} | True k: {k_true}", flush=True)
             print('Code executed in %.2f s' %(dt))
 
             exp["CVIs"][str(cvi)] = {
-                "scores" : scores[0],
+                "scores" : scores,
                 "selected" : k_selected,
                 "time" : dt,
             }
-
-            if k_selected is None:
-                ax_titles.append(
-                    f"{cvi}, No k could be selected"
-                )
-            else:
-                ax_titles.append(
-                    f"{cvi}, k={k_selected}, VI={exp['VIs'][k_selected]:.4f}"
-                )
 
     # ---------------- Plot selected clusterings -----------------------
     if fig is not None:
@@ -255,7 +256,16 @@ def run_process(source_number, local):
     main()
 
 if __name__ == "__main__":
-    source_numbers = range(3)
+    CLI=argparse.ArgumentParser()
+    CLI.add_argument(
+        "--source_num", # Drop `--` for positional/required params
+        nargs="*",  # 0 or more values expected => creates a list
+        type=int,
+        default=[0, 1, 2],  # default if nothing is provided
+    )
+    args = CLI.parse_args()
+
+    source_numbers = args.source_num
     local = bool(int(sys.argv[1]))
 
     processes = [

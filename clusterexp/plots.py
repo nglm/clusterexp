@@ -7,12 +7,26 @@ from math import ceil
 
 from pycvi.cvi import CVIs
 
-# --------  Adapt the figures to the total number of scores ------------
-N_CVIs = len(CVIs)
-N_ROWS = ceil((N_CVIs+2) / 5)
-N_COLS = 5
-FIGSIZE = (4*N_COLS, ceil(4*N_ROWS))
-# ----------------------------------------------------------------------
+def _get_nrows_ncols(nplots: int = None):
+    """
+    Adapt the figures to the total number of CVIs.
+
+    We want to know before creating the figure how many rows and columns
+    we will need. This depends on how many different k will be selected
+    and potentially if we have additional plots for the true data.
+
+    Parameters
+    ----------
+    nplots : int, optional
+        Number of plots, by default None, resulting in `nplots=len(CVIs)
+        + 2`
+    """
+    if nplots is None:
+        nplots = len(CVIs) + 2
+    n_rows = ceil(nplots / 5)
+    n_cols = 5
+    figsize = (4*n_cols, ceil(4*n_rows))
+    return n_rows, n_cols, figsize
 
 def _get_shape_UCR(data: np.ndarray) -> Tuple[Tuple[int], bool]:
     """
@@ -56,7 +70,7 @@ def _get_colors(name: str="Set1") -> List:
     colors = cmap.colors
     return colors
 
-def _plot_cluster(
+def plot_cluster(
     ax,
     data: np.ndarray,
     cluster: List[int],
@@ -70,6 +84,22 @@ def _plot_cluster(
 
     In case it is UCR data, use "color" for each line representing a
     datapoint in the cluster.
+
+    Parameters
+    ----------
+    ax : A matplotlib axes
+        Where to plot the cluster
+    data : np.ndarray
+        The dataset
+    cluster : List[int]
+        The indices representing the cluster
+    color : _type_
+        The color to use to plot the cluster
+
+    Returns
+    -------
+    A matplotlib axes
+        The same matplotlib axes, but with the cluster plotted.
     """
     # Get the full shape and whether it is time-series data.
     (N, T, d), UCR = _get_shape_UCR(data)
@@ -88,7 +118,7 @@ def _plot_cluster(
     # If non time series data, use scatter plots.
     else:
         # Size of the dots
-        s = 1
+        s = 2
         if d == 1:
             x_val = np.zeros_like(data[cluster, 0])
             y_val = data[cluster, 0]
@@ -112,45 +142,51 @@ def plot_clusters(
     titles: List[str],
 ):
     """
-    Add one plot per score with their corresponding selected clustering.
+    Add one plot per CVI with their corresponding selected clustering.
 
-    The fig should already contain 2 plots first with the true
-    clusterings, and the clusterings obtained with k_true.
+    Parameters
+    ----------
+    data : np.ndarray, shape (N, d)
+        Original data, corresponding to a benchmark dataset
+    summary_selected : Dict[int, Dict[str, Any]]
+        A dictionary containing for each selected k ("k_selected"), all
+        information on the selected clustering ("#CVI, "clustering",
+        "ax_title")
+    titles : List[str]
+        List of titles for each CVI
+    fig : A matplotlib figure
+        Figure where all the plots are (including 2 about the true
+        clusters)
 
-    :param data: Original data, corresponding to a benchmark dataset
-    :type data: np.ndarray, shape (N, d)
-    :param clusterings_selected: A list of n_score clusterings.
-    :type clusterings_selected: List[List[List[int]]]
-    :param fig: Figure where all the plots are (including 2 about the
-        true clusters)
-    :type fig:
-    :param titles: List of titles for each score
-    :type titles: List[str]
-    :return: a figure with one clustering per score (+2 plots first)
-    :rtype: A matplotlib figure
+    Returns
+    -------
+    A matplotlib figure
+        A figure with one clustering per CVI (+2 plots first)
     """
     (N, T, d), UCR = _get_shape_UCR(data)
     colors = _get_colors()
 
     # -------  Plot the clustering selected by a given score -----------
-    for i_score in range(len(clusterings_selected)):
+    for i_CVI in range(len(clusterings_selected)):
 
         # ------------- Find the ax corresponding to the score ---------
         if d <= 2:
-            ax = fig.axes[i_score+2] # i+2 because there are 2 plots already
+            ax = fig.axes[i_CVI+2] # i+2 because there are 2 plots already
         # Some datasets are in 3D
         elif d == 3:
-            ax = fig.add_subplot(N_ROWS, N_COLS, i_score+3, projection='3d')
+            return None
         else:
             return None
 
         # Add predefined title
-        ax.set_title(str(titles[i_score]))
+        ax.set_title(str(titles[i_CVI]))
+        if clusterings_selected is None:
+            continue
 
         # ------------------ Plot clusters one by one ------------------
-        for i_label, cluster in enumerate(clusterings_selected[i_score]):
+        for i_label, cluster in enumerate(clusterings_selected[i_CVI]):
             color = colors[i_label % len(colors)]
-            ax = _plot_cluster(ax, data, cluster, color)
+            ax = plot_cluster(ax, data, cluster, color)
 
     return fig
 
@@ -160,34 +196,48 @@ def plot_true(
     data: np.ndarray,
     labels: np.ndarray,
     clusterings: List[List[List[int]]],
+    VI_best: float = None,
+    n_plots: int = None
 ):
     """
-    Plot the true clustering and the clustering obtained with k_true
+    Plot the true clustering and the clustering obtained with k_true.
 
     Create also the whole figure that will be used to plot the
-    clusterings selected by each score.
+    clusterings selected by each CVI.
 
-    :param data: Original data, corresponding to a benchmark dataset
-    :type data: np.ndarray, shape (N, d)
-    :param labels: True labels
-    :type labels: np.ndarray
-    :param clusterings: The clusterings obtained with k_true
-    :type clusterings: List[List[List[int]]]
-    :return: The figure with 2 plots on it, and many empty axes.
-    :rtype: A matplotlib figure
+    Parameters
+    ----------
+    data : np.ndarray, shape (N, d)
+        Original data, corresponding to a benchmark dataset
+    labels : np.ndarray, shape (N,)
+        True labels
+    clusterings : List[List[List[int]]]
+        The clusterings obtained with k_true
+    VI_best : float, optional
+        The VI between the true clustering and the clustering assuming
+        the right number of clusters., by default None
+    n_plots : int, optional
+        Number of plots to add after the two initial plots, by default
+        None
+
+    Returns
+    -------
+    A matplotlib figure
+        The figure with 2 plots on it, and many empty axes.
     """
     (N, T, d), UCR = _get_shape_UCR(data)
     colors = _get_colors()
 
     # ----------------------- Create figure ----------------
     if d <= 2:
+        nrows, ncols, figsize = _get_nrows_ncols(n_plots)
         fig, axes = plt.subplots(
-            nrows=N_ROWS, ncols=N_COLS, sharex=True, sharey=True,
-            figsize=FIGSIZE, tight_layout=True
+            nrows=nrows, ncols=ncols, sharex=True, sharey=True,
+            figsize=figsize, tight_layout=True
         )
     # Some datasets are in 3D
     elif d == 3:
-        fig = plt.figure(figsize=FIGSIZE, tight_layout=True)
+        return None
     else:
         return None
 
@@ -207,23 +257,26 @@ def plot_true(
         # The clustering obtained with k_true
         clusterings
     ]
-    ax_titles = [
-        "True labels, k={}".format(n_labels),
-        "Clustering assuming k={}".format(n_labels),
-    ]
+    if VI_best is not None:
+        ax_titles = [
+            f"True labels, k={n_labels}",
+            f"Clustering assuming k={n_labels} | VI={VI_best:.4f}",
+        ]
+    else:
+        ax_titles = [
+            f"True labels, k={n_labels}",
+            f"Clustering assuming k={n_labels}",
+        ]
 
     # ------ True clustering and clustering assuming n_labels ----------
     for i_ax in range(2):
-        if d <= 2:
-            ax = fig.axes[i_ax]
-        elif d == 3:
-            ax = fig.add_subplot(N_ROWS, N_COLS, i_ax+1, projection='3d')
+        ax = fig.axes[i_ax]
 
         # ---------------  Plot clusters one by one --------------------
         for i_label in range(n_labels):
             c = clusters[i_ax][i_label]
             color = colors[i_label % len(colors)]
-            ax = _plot_cluster(ax, data, c, color)
+            ax = plot_cluster(ax, data, c, color)
 
         # Add title
         ax.set_title(ax_titles[i_ax])

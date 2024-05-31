@@ -6,10 +6,10 @@ authors = ["Natacha, Galmiche <natacha.galmiche@uib.no>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.8,<3.12"
-pycvi = {git = "https://github.com/nglm/pycvi.git",  branch = "master"}
+python = ">=3.9,<3.12"
+pycvi-lib = {git = "https://github.com/nglm/pycvi.git",  branch = "master"}
 scikit-learn-extra = "^0.3.0"
-matplotlib = "^3.7"
+matplotlib = "^3.8.4"
 
 [tool.poetry.group.notebook]
 optional = true
