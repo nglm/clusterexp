@@ -12,6 +12,7 @@ import time
 import json
 from mpl_toolkits.mplot3d import Axes3D
 import gc
+import argparse
 
 from pycvi.cluster import generate_all_clusterings
 from pycvi.compute_scores import f_pdist
@@ -152,8 +153,8 @@ def experiment(
     dt = t_end - t_start
 
     # store clustering information
-    exp["clusterings"] = clusterings[0]
-    exp["time"] : dt
+    exp["clusterings"] = clusterings
+    exp["time"] = dt
 
     print(f"Clusterings generated in: {dt:.2f}s")
 
@@ -250,7 +251,7 @@ def main(run_number: int = 0):
         if run_number == 2:
             model_classes = [ TimeSeriesKMeans ]
             model_names = [ "TimeSeriesKMeans" ]
-            model_kws = [{}]
+            model_kws = [{"distance_params" : {"window": 0.2}}]
 
     t_start = time.time()
     for i_model, model_class in enumerate(model_classes):
@@ -311,9 +312,26 @@ def run_process(source_number, run_number, local, use_DTW):
     main(run_number)
 
 if __name__ == "__main__":
+    CLI=argparse.ArgumentParser()
+
+    CLI.add_argument(
+        "--run_num", # Drop `--` for positional/required params
+        nargs="*",  # 0 or more values expected => creates a list
+        type=int,
+        default=[0, 1, 2],  # default if nothing is provided
+    )
+    CLI.add_argument(
+        "--source_num", # Drop `--` for positional/required params
+        nargs="*",  # 0 or more values expected => creates a list
+        type=int,
+        default=[0, 1, 2],  # default if nothing is provided
+    )
+    args = CLI.parse_args()
+
     # source_numbers = range(3)
-    source_numbers = [2]
-    run_numbers = [3]
+    source_numbers = args.source_num
+    # run_numbers = range(4)
+    run_numbers = args.run_num
 
     local = bool(int(sys.argv[1]))
     DTWs = [False, True]
