@@ -9,6 +9,7 @@
 */docs/build*
 # no tmp files
 tmp/*
+res/*
 AgglomerativeClustering/
 AgglomerativeClustering-Single/
 AgglomerativeClustering-Ward/
