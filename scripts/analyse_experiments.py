@@ -4,6 +4,7 @@ import os
 import sys
 import numpy as np
 import json
+import time
 from datetime import date
 from pycvi.cvi import CVIs
 from math import exp
@@ -84,18 +85,21 @@ def main():
     - `acc`: The number of successful datasets
     - `weighted_acc`: The number of successful datasets weighted by the
     quality.
-    - `quality`: The accumulated quality of the successful dataset
+    - `quality`: The accumulated quality of clusterings selected
 
     For each dataset find:
     - `acc`: The number of successful CVIs, using all clustering methods
     - `weighted_acc`: The number of successful CVIs weighted by the
     quality, using all clustering methods
     - `k_true_quality`: The accumulated quality of the clustering
-    assuming k_true clusters, using all clustering methods
-    - `quality`: The accumulated quality of the successful CVIs, using
-    all clustering methods
+    assuming k_true clusters, using all clustering methods. This is
+    independent of CVIs.
+    - `quality`: The accumulated quality of clusterings selected by each
+    CVI, using all clustering methods. (Averaged over the number of
+    CVIs)
     - `max_quality`: The accumulated max quality that could have been
-    obtained with the given clusterings, using all clustering methods
+    obtained with the given clusterings, using all clustering methods.
+    This is independent of CVIs.
     - `CVIs`: A summary of the performance of each CVI, using all
     clustering methods (acc, weighted_acc, k_true_quality, quality,
     max_quality, VIs_selected, VIs_true, VIs_best, success)
@@ -115,6 +119,15 @@ def main():
     in general, but not necessarily *the* pre-defined number of clusters
     """
 
+    np.random.seed(SEED)
+    # -------------- Redirect output --------------
+    today = str(date.today())
+    out_fname = f'./output-analyse_exp-{today}_{DATA_SOURCE}.txt'
+
+    fout = open(out_fname, 'wt')
+    sys.stdout = fout
+    t_start = time.time()
+
     res_datasets = {}
 
     datasets = get_list_datasets(RES_DIR + FNAME_DATASET_EXPS)
@@ -122,6 +135,7 @@ def main():
     # ================= Analysis Datasets =================
 
     for d in datasets:
+        print(f" ===== DATASET {d} =====", flush=True)
 
         # ---------------- Initialisation of dataset ------------------
 
@@ -135,7 +149,7 @@ def main():
             "weighted_acc" : 0,   # +w if k_true=k_selected
             "k_true_quality" : 0, # +w using k_true (indpdt of k_selected)
             "quality" : 0,        # +w using k_selected (indpdt of k_true)
-            "max_quality" : 0,    # +w using k that has max quality
+            "max_quality" : 0,    # +w using k of max quality (indpt of CVI)
             "exps" : {},          # One dict per experience
             "CVIs" : {},          # One dict per CVI
             "k_true" : None,      # k_true of this dataset
@@ -174,6 +188,7 @@ def main():
         )
 
         for fname in fnames:
+            print(f"processing {fname}...", flush=True)
 
             with open(RES_DIR + fname + ".json") as f_json:
                 exp = json.load(f_json)
@@ -181,7 +196,7 @@ def main():
             # VI of each assumption k for this clustering method
             # Change None to np.inf, which results in quality=0
             VIS_no_None = {
-                k: vi if vi is not None else np.inf
+                k: (vi if vi is not None else np.inf)
                 for k, vi in exp["VIs"].items()
             }
             k_true = exp["k"]
@@ -216,6 +231,8 @@ def main():
             # Update clustering method single values
             res_exp["k_true_quality"] = k_true_quality
             res_exp["max_quality"] = max_quality
+
+            print(f"k_true: {k_true}  |  k_best: {k_best}", flush=True)
 
             # ------ Update of experience ------
 
@@ -259,11 +276,21 @@ def main():
 
             # ------ Update of dataset ------
 
-            # Update weighted accuracy for this dataset
+            # Average quality over the number of CVIs
+            res_exp["quality"] /= len(res_datasets[d]["CVIs"])
+            # Updates
             res_datasets[d]["acc"] += res_exp["acc"]
             res_datasets[d]["weighted_acc"] += res_exp["weighted_acc"]
             res_datasets[d]["quality"] += res_exp["quality"]
             res_datasets[d]["exps"][fname] = res_exp
+
+            msg = (
+                f"acc: {res_exp["acc"]}  |  " +
+                f"weighted_acc: {res_exp["weighted_acc"]}  |  " +
+                f"quality: {res_exp["quality"]}  |  "
+            )
+
+            print(msg, flush=True)
 
     # ================= Analysis CVIs =================
 
@@ -287,6 +314,7 @@ def main():
 
             }
 
+    # ------------ Update all CVIs using res_datasets ----------
     for d in datasets:
 
         # Update res_CVIs using res_datasets
@@ -306,6 +334,29 @@ def main():
                 d["acc"] += d_cvi["acc"]
                 d["weighted_acc"] += d_cvi["weighted_acc"]
                 d["quality"] += d_cvi["quality"]
+
+                res_CVIs["CVIs"][str(cvi_instance)] = d
+
+    # --------------- Print out CVI results -----------------
+    for cvi in CVIs:
+        for cvi_type in cvi.cvi_types:
+            cvi_instance = cvi(cvi_type=cvi_type)
+            d = res_CVIs["CVIs"][str(cvi_instance)]
+
+            print(f" ===== CVI {str(cvi_instance)} =====", flush=True)
+            msg = (
+                f"acc: {d["acc"]}  |  " +
+                f"weighted_acc: {d["weighted_acc"]}  |  " +
+                f"quality: {d["quality"]}  |  "
+            )
+            print(msg, flush=True)
+
+
+    # ================= Saving dictionaries =================
+    t_end = time.time()
+    dt = t_end - t_start
+    print(f"\n\nTotal execution time: {dt:.2f}")
+    fout.close()
 
     # Save the analysis dict
     json_str = json.dumps(res_datasets, indent=2)
