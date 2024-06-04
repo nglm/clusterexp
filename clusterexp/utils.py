@@ -328,17 +328,34 @@ def get_list_datasets(fname: str) -> List[str]:
 def get_list_exp(
     dataset_name: str,
     res_dir: str = './res/',
+    suffix: str = ".json",
 ) -> List[str]:
     """
     For each dataset, find all experiments working on this dataset
-    but using different clustering methods (by filtering on the
-    filename)
 
-    :param dataset_name: Name of the dataset
-    :type dataset_name: str
-    :return: List of experiment filenames
-    :rtype: List[Dict]
+    Each experiment on a dataset used a different clustering method.
+    This function filters based on the filename of the experiment file.
+
+    The extension (".json") is not included in the returned filenames
+
+    Parameters
+    ----------
+    dataset_name : str
+        Name of the dataset
+    res_dir : str, optional
+        Path to the directory containing the experiments, by default
+        './res/'
+    suffix : str, optional
+        Suffix of the experiment filenames, by default ".json", but
+        using "_scored.json" can be useful to use score files instead of
+        clustering files.
+
+    Returns
+    -------
+    List[str]
+        List of experiment filenames (excluding the extension ".json")
     """
+
     # List of directories, corresponding to clustering methods
     list_dirs = [
         dname.strip() for dname in next(os.walk(res_dir))[1]
@@ -351,7 +368,7 @@ def get_list_exp(
         # get full directory + filename without the extension
         fnames += [
             dir + "/" + fname[:-5] for fname in dir_fnames
-            if dataset_name + ".json" in fname
+            if dataset_name + suffix in fname
         ]
     return fnames
 
