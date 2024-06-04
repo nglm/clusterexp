@@ -285,9 +285,9 @@ def main():
             res_datasets[d]["exps"][fname] = res_exp
 
             msg = (
-                f"acc: {res_exp["acc"]}  |  " +
-                f"weighted_acc: {res_exp["weighted_acc"]}  |  " +
-                f"quality: {res_exp["quality"]}  |  "
+                f'acc: {res_exp["acc"]}  |  ' +
+                f'weighted_acc: {res_exp["weighted_acc"]}  |  ' +
+                f'quality: {res_exp["quality"]}  |  '
             )
 
             print(msg, flush=True)
@@ -345,9 +345,9 @@ def main():
 
             print(f" ===== CVI {str(cvi_instance)} =====", flush=True)
             msg = (
-                f"acc: {d["acc"]}  |  " +
-                f"weighted_acc: {d["weighted_acc"]}  |  " +
-                f"quality: {d["quality"]}  |  "
+                f'acc: {d["acc"]}  |  ' +
+                f'weighted_acc: {d["weighted_acc"]}  |  ' +
+                f'quality: {d["quality"]}  |  '
             )
             print(msg, flush=True)
 
