@@ -199,7 +199,8 @@ def main():
                 k: (vi if vi is not None else np.inf)
                 for k, vi in exp["VIs"].items()
             }
-            k_true = exp["k"]
+            VIS_no_None.pop("0", None)
+            k_true = str(exp["k"])
             k_best = min(VIS_no_None, key=VIS_no_None.get)
 
             VI_true = VIS_no_None[k_true]
@@ -243,8 +244,8 @@ def main():
                     d_cvi = res_datasets[d]["CVIs"][str(cvi_instance)]
 
                     # Find selected VI of the selected k
-                    k_selected = exp["CVIs"][str(cvi_instance)]["selected"]
-                    if k_selected is None:
+                    k_selected = str(exp["CVIs"][str(cvi_instance)]["selected"])
+                    if (k_selected is None) or (k_selected == "None"):
                         VI_selected = np.inf
                         success = False
                     else:
@@ -259,6 +260,7 @@ def main():
                     # Compute weighted accuracy for this CVI
                     d_cvi["success"].append(success)
                     if success:
+                        res_datasets[d]["success"] = True
                         d_cvi["acc"] += 1
                         res_exp["acc"] += 1
                         d_cvi["weighted_acc"] += quality_selected
@@ -327,15 +329,15 @@ def main():
                 cvi_instance = cvi(cvi_type=cvi_type)
 
                 # Shorter variable names for dicts
-                d = res_CVIs["CVIs"][str(cvi_instance)]
+                res_cvi = res_CVIs["CVIs"][str(cvi_instance)]
                 d_cvi = res_datasets[d]["CVIs"][str(cvi_instance)]
 
                 # Update res_CVIs using res_datasets
-                d["acc"] += d_cvi["acc"]
-                d["weighted_acc"] += d_cvi["weighted_acc"]
-                d["quality"] += d_cvi["quality"]
+                res_cvi["acc"] += d_cvi["acc"]
+                res_cvi["weighted_acc"] += d_cvi["weighted_acc"]
+                res_cvi["quality"] += d_cvi["quality"]
 
-                res_CVIs["CVIs"][str(cvi_instance)] = d
+                res_CVIs["CVIs"][str(cvi_instance)] = res_cvi
 
     # --------------- Print out CVI results -----------------
     for cvi in CVIs:
