@@ -10,6 +10,7 @@
 # no tmp files
 tmp/*
 res/*
+notes/*
 AgglomerativeClustering/
 AgglomerativeClustering-Single/
 AgglomerativeClustering-Ward/
