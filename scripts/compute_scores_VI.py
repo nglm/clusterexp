@@ -110,10 +110,19 @@ def compute_scores_VI(
     # ------------------------ Compute scores --------------------------
     clusterings_selected = []
     exp["CVIs"] = {}
-    for s in CVIs:
-        for cvi_type in s.cvi_types:
-            cvi = s(cvi_type=cvi_type)
-            print(" ================ {} ================ ".format(cvi))
+    cvi_done = {}
+    for cvi in CVIs:
+        for cvi_type in cvi.cvi_types:
+            cvi_instance = cvi(cvi_type=cvi_type)
+
+            # Ugly fix for ScoreFunction and CH_original for which
+            # "original" = absolute after initialisation......
+            if str(cvi_instance) in cvi_done:
+                continue
+            else:
+                cvi_done[str(cvi_instance)] = True
+
+            print(" ================ {} ================ ".format(cvi_instance))
             t_start = time.time()
 
             # Dirty workaround because old files don't have the DTW key
@@ -124,7 +133,7 @@ def compute_scores_VI(
                 exp["DTW"] = DTW
 
             scores = compute_all_scores(
-                cvi,
+                cvi_instance,
                 X,
                 exp["clusterings"],
                 DTW= DTW,
@@ -133,17 +142,17 @@ def compute_scores_VI(
 
             # Sometimes there is no k_selected because all scores were None
             try:
-                k_selected = cvi.select(scores)
+                k_selected = cvi_instance.select(scores)
             except SelectionError as e:
                 k_selected = None
                 clusterings_selected.append(None)
                 ax_titles.append(
-                    f"{cvi}, No clustering could be selected."
+                    f"{cvi_instance}, No clustering could be selected."
                 )
             else:
                 clusterings_selected.append(exp["clusterings"][k_selected])
                 ax_titles.append(
-                    f"{cvi}, k={k_selected}, VI={VIs[k_selected]:.4f}"
+                    f"{cvi_instance}, k={k_selected}, VI={VIs[k_selected]:.4f}"
                 )
             t_end = time.time()
             dt = t_end - t_start
@@ -154,7 +163,7 @@ def compute_scores_VI(
             print(f"Selected k: {k_selected} | True k: {k_true}", flush=True)
             print('Code executed in %.2f s' %(dt))
 
-            exp["CVIs"][str(cvi)] = {
+            exp["CVIs"][str(cvi_instance)] = {
                 "scores" : scores,
                 "selected" : k_selected,
                 "time" : dt,

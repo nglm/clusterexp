@@ -154,7 +154,7 @@ def main():
             "CVIs" : {},          # One dict per CVI
             "k_true" : None,      # k_true of this dataset
             "k_best" : [],        # k that minimises VI per clustering method
-            "success" : False,
+            "success" : False,    # True if <=1 CVI-clustering method worked
         }
 
         # Initialise for each CVI accumulators on this dataset (but for
@@ -238,9 +238,18 @@ def main():
             # ------ Update of experience ------
 
             # Update weighted accuracy for each CVI of this experiment
+            cvi_done = {}
             for cvi in CVIs:
                 for cvi_type in cvi.cvi_types:
                     cvi_instance = cvi(cvi_type=cvi_type)
+
+                    # Ugly fix for ScoreFunction and CH_original for which
+                    # "original" = absolute after initialisation......
+                    if str(cvi_instance) in cvi_done:
+                        continue
+                    else:
+                        cvi_done[str(cvi_instance)] = True
+
                     d_cvi = res_datasets[d]["CVIs"][str(cvi_instance)]
 
                     # Find selected VI of the selected k
@@ -324,9 +333,17 @@ def main():
 
         # Update accumulators of res_CVIs after going through all
         # experiments on this dataset
+        cvi_done = {}
         for cvi in CVIs:
             for cvi_type in cvi.cvi_types:
                 cvi_instance = cvi(cvi_type=cvi_type)
+
+                # Ugly fix for ScoreFunction and CH_original for which
+                # "original" = absolute after initialisation......
+                if str(cvi_instance) in cvi_done:
+                    continue
+                else:
+                    cvi_done[str(cvi_instance)] = True
 
                 # Shorter variable names for dicts
                 res_cvi = res_CVIs["CVIs"][str(cvi_instance)]
@@ -340,9 +357,18 @@ def main():
                 res_CVIs["CVIs"][str(cvi_instance)] = res_cvi
 
     # --------------- Print out CVI results -----------------
+    cvi_done = {}
     for cvi in CVIs:
         for cvi_type in cvi.cvi_types:
             cvi_instance = cvi(cvi_type=cvi_type)
+
+            # Ugly fix for ScoreFunction and CH_original for which
+            # "original" = absolute after initialisation......
+            if str(cvi_instance) in cvi_done:
+                continue
+            else:
+                cvi_done[str(cvi_instance)] = True
+
             d = res_CVIs["CVIs"][str(cvi_instance)]
 
             print(f" ===== CVI {str(cvi_instance)} =====", flush=True)
