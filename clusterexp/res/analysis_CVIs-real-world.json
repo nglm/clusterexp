@@ -1,0 +1,95 @@
+{
+  "max_quality": 11.838981602595904,
+  "CVIs": {
+    "Hartigan_monotonous": {
+      "acc": 5,
+      "weighted_acc": 1.2149430467956008,
+      "quality": 9.115182495151108
+    },
+    "Hartigan_original": {
+      "acc": 6,
+      "weighted_acc": 1.0339109413331196,
+      "quality": 5.742641589907731
+    },
+    "CalinskiHarabasz_monotonous": {
+      "acc": 0,
+      "weighted_acc": 0,
+      "quality": 8.351469782260303
+    },
+    "CalinskiHarabasz_original": {
+      "acc": 21,
+      "weighted_acc": 3.5170918380416034,
+      "quality": 7.852491337571107
+    },
+    "GapStatistic_monotonous": {
+      "acc": 17,
+      "weighted_acc": 2.38971195702442,
+      "quality": 8.173797384622153
+    },
+    "GapStatistic_original": {
+      "acc": 10,
+      "weighted_acc": 1.620812238655618,
+      "quality": 7.533986884578728
+    },
+    "Silhouette": {
+      "acc": 13,
+      "weighted_acc": 2.975668909811394,
+      "quality": 7.003518421802209
+    },
+    "ScoreFunction": {
+      "acc": 7,
+      "weighted_acc": 1.8880454656133572,
+      "quality": 8.70129364584449
+    },
+    "MaulikBandyopadhyay_absolute": {
+      "acc": 35,
+      "weighted_acc": 4.952743223198063,
+      "quality": 7.690595060095633
+    },
+    "MaulikBandyopadhyay_monotonous": {
+      "acc": 34,
+      "weighted_acc": 4.7769739017949515,
+      "quality": 7.391534503558126
+    },
+    "SD": {
+      "acc": 16,
+      "weighted_acc": 2.7436153325997585,
+      "quality": 5.476986030989863
+    },
+    "SDbw": {
+      "acc": 18,
+      "weighted_acc": 2.5241368003551266,
+      "quality": 5.07283832780702
+    },
+    "Dunn": {
+      "acc": 19,
+      "weighted_acc": 2.930365150554886,
+      "quality": 6.368980323582599
+    },
+    "XB": {
+      "acc": 26,
+      "weighted_acc": 4.66044866003531,
+      "quality": 8.17179018465499
+    },
+    "XB_star": {
+      "acc": 26,
+      "weighted_acc": 4.192130327186883,
+      "quality": 8.27705092726344
+    },
+    "DB": {
+      "acc": 35,
+      "weighted_acc": 4.730322358704387,
+      "quality": 7.394216858857794
+    },
+    "Inertia_sum": {
+      "acc": 4,
+      "weighted_acc": 1.1506585825371596,
+      "quality": 8.989171435992018
+    },
+    "Diameter_max": {
+      "acc": 11,
+      "weighted_acc": 1.4116095387498215,
+      "quality": 6.051801390750514
+    }
+  }
+}

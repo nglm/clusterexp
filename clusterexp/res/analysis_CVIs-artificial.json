@@ -1,0 +1,95 @@
+{
+  "max_quality": 229.03362217585817,
+  "CVIs": {
+    "Hartigan_monotonous": {
+      "acc": 158,
+      "weighted_acc": 87.85211272995973,
+      "quality": 128.9145942555752
+    },
+    "Hartigan_original": {
+      "acc": 74,
+      "weighted_acc": 49.31985974626274,
+      "quality": 96.76804506858866
+    },
+    "CalinskiHarabasz_monotonous": {
+      "acc": 71,
+      "weighted_acc": 62.39524443507881,
+      "quality": 101.40226831497344
+    },
+    "CalinskiHarabasz_original": {
+      "acc": 148,
+      "weighted_acc": 92.31343798361303,
+      "quality": 137.98380840222126
+    },
+    "GapStatistic_monotonous": {
+      "acc": 156,
+      "weighted_acc": 92.86695660328184,
+      "quality": 137.4246526907126
+    },
+    "GapStatistic_original": {
+      "acc": 97,
+      "weighted_acc": 67.48289813279412,
+      "quality": 113.93301137311668
+    },
+    "Silhouette": {
+      "acc": 139,
+      "weighted_acc": 81.22017048632813,
+      "quality": 148.18689759220922
+    },
+    "ScoreFunction": {
+      "acc": 80,
+      "weighted_acc": 57.61306528628734,
+      "quality": 101.26331442347248
+    },
+    "MaulikBandyopadhyay_absolute": {
+      "acc": 150,
+      "weighted_acc": 97.06687656163483,
+      "quality": 151.79233332550007
+    },
+    "MaulikBandyopadhyay_monotonous": {
+      "acc": 175,
+      "weighted_acc": 80.09256549039712,
+      "quality": 121.29553247491553
+    },
+    "SD": {
+      "acc": 6,
+      "weighted_acc": 2.4714337457384987,
+      "quality": 46.485172858058704
+    },
+    "SDbw": {
+      "acc": 53,
+      "weighted_acc": 46.83922324255886,
+      "quality": 90.66590924693134
+    },
+    "Dunn": {
+      "acc": 120,
+      "weighted_acc": 91.89059529818684,
+      "quality": 135.93931455131775
+    },
+    "XB": {
+      "acc": 173,
+      "weighted_acc": 100.55677823709622,
+      "quality": 147.52686453075
+    },
+    "XB_star": {
+      "acc": 198,
+      "weighted_acc": 108.3058182960936,
+      "quality": 149.14044896683166
+    },
+    "DB": {
+      "acc": 140,
+      "weighted_acc": 48.04393137433753,
+      "quality": 77.77937754905926
+    },
+    "Inertia_sum": {
+      "acc": 94,
+      "weighted_acc": 39.593767257144314,
+      "quality": 83.49673028475615
+    },
+    "Diameter_max": {
+      "acc": 104,
+      "weighted_acc": 54.83905353756254,
+      "quality": 110.30299286232832
+    }
+  }
+}
