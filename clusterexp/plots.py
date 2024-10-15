@@ -122,16 +122,16 @@ def plot_cluster(
         if d == 1:
             x_val = np.zeros_like(data[cluster, 0])
             y_val = data[cluster, 0]
-            ax.scatter(x_val, y_val, s=s)
+            ax.scatter(x_val, y_val, s=s, c=color)
         elif d == 2:
             x_val = data[cluster, 0]
             y_val = data[cluster, 1]
-            ax.scatter(x_val, y_val, s=s)
+            ax.scatter(x_val, y_val, s=s, c=color)
         elif d == 3:
             x_val = data[cluster, 0]
             y_val = data[cluster, 1]
             z_val = data[cluster, 2]
-            ax.scatter(x_val, y_val, z_val, s=s)
+            ax.scatter(x_val, y_val, z_val, s=s, c=color)
 
     return ax
 
@@ -282,3 +282,152 @@ def plot_true(
         ax.set_title(ax_titles[i_ax])
 
     return fig
+
+def _align_clusterings(
+    clustering1: List[List[int]],
+    clustering2: List[List[int]],
+) -> Tuple[List[List[int]], List[List[int]]]:
+    """
+    Align `clustering2` to `clustering1`.
+
+    To be aligned the clusterings must have the same number of clusters
+
+    :param clustering1: First clustering, used as reference
+    :type clustering1: List[List[int]]
+    :param clustering2: Second clustering, to be aligned
+    :type clustering2: List[List[int]]
+    :return: Same clusters but "aligned" to `clustering1`
+    :rtype: Tuple[List[List[int]], List[List[int]]]
+    """
+    if len(clustering1) != len(clustering2):
+        msg = (
+            "clustering1 and clustering2 can't be aligned because their"
+            + "lengths don't match: {} and {}."
+        ).format(len(clustering1), len(clustering2))
+        raise ValueError(msg)
+
+    # Make a safe copy of clustering2 where we will delete one by one
+    # clusters that are already aligned
+    left_c2 = [set(c.copy()) for c in clustering2]
+    sorted_c1 = sorted(clustering1, key=len, reverse=True)
+    res_c2 = []
+
+    # While not all clusters have been processed, take the biggest
+    # cluster in c1
+    for c1 in sorted_c1:
+        set_c1 = set(c1)
+
+        # Find the cluster in clustering 2 that has the largest common
+        # datapoints with the largest cluster in c1
+        argbest = np.argmax([
+            len(set_c1.intersection(c2)) for c2 in left_c2
+        ])
+
+        # Add to the result and remove from left_c2
+        res_c2.append(list(left_c2[argbest]))
+        del left_c2[argbest]
+    return sorted_c1, res_c2
+
+
+def plot_true_diff(
+    data: np.ndarray,
+    labels: np.ndarray,
+    true_clusters: List[List[int]],
+    generated_clusterings: List[List[int]],
+    VI_best: float = None,
+):
+    """
+    Plot the true clustering and the clustering generated with k_true
+    and misclassified
+
+    Parameters
+    ----------
+    data : np.ndarray, shape (N, d)
+        Original data, corresponding to a benchmark dataset
+    labels : np.ndarray, shape (N,)
+        True labels
+    true_clusters : List[List[int]]
+        The true clustering
+    generated_clusterings : List[List[int]]
+        The clustering obtained with k_true
+    VI_best : float, optional
+        The VI between the true clustering and the clustering assuming
+        the right number of clusters., by default None
+
+    Returns
+    -------
+    A matplotlib figure
+        The figure with 3 plots on it
+    List[List[int]]
+        The [correct, misclassified] datapoints
+    """
+    (N, T, d), UCR = _get_shape_UCR(data)
+    colors_list = _get_colors()
+
+    # ----------------------- Create figure ----------------
+    nrows, ncols, (w, h) = _get_nrows_ncols(3)
+    fig, axes = plt.subplots(
+        nrows=nrows, ncols=min(ncols, 3), sharex=True, sharey=True,
+        figsize=(w*3/5, h), tight_layout=True
+    )
+
+    # ----------------------- Labels ----------------
+    if labels is None:
+        labels = np.zeros(N)
+    classes = np.unique(labels)
+    n_labels = len(classes)
+    if n_labels == N:
+        labels = np.zeros(N)
+        n_labels = 1
+
+    # ------------------- variables for the 3 axes ----------------
+    # Each clustering is a list of list of datapoint indices
+    # Align clusterings so that we can compare them and find misclassified
+    # datapoints
+    sorted_true, generated_aligned = _align_clusterings(
+        true_clusters, generated_clusterings
+    )
+
+    # Find misclassified and correctly classified datapoints
+    misclassified = []
+    for (c1, c2) in zip(sorted_true, generated_aligned):
+        # Symmetric difference: elements in either c1 or c2 but not both.
+        misclassified += list(set(c1) ^ set(c2))
+    misclassified = set(misclassified)
+    correct = list(set(range(N)) - misclassified)
+    misclassified = list(misclassified)
+
+    clusterings = [sorted_true, generated_aligned, [correct, misclassified]]
+    if VI_best is not None:
+        ax_titles = [
+            f"True labels, k={n_labels}",
+            f"Clustering assuming k={n_labels} | VI={VI_best:.4f}",
+            f"Misclassified datapoints",
+        ]
+    else:
+        ax_titles = [
+            f"True labels, k={n_labels}",
+            f"Clustering assuming k={n_labels}",
+            f"Misclassified datapoints",
+        ]
+
+    colors = [
+        colors_list,
+        colors_list,
+        ["gray", "red"]
+    ]
+
+    # ------ True clustering and clustering assuming n_labels ----------
+    for i_ax in range(3):
+        ax = fig.axes[i_ax]
+
+        # ---------------  Plot clusters one by one --------------------
+        for i_label in range(len(clusterings[i_ax])):
+            c = clusterings[i_ax][i_label]
+            color = colors[i_ax][i_label % len(colors[i_ax])]
+            ax = plot_cluster(ax, data, c, color)
+
+        # Add title
+        ax.set_title(ax_titles[i_ax])
+
+    return fig, [correct, misclassified]
