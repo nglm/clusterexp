@@ -290,14 +290,26 @@ def _align_clusterings(
     """
     Align `clustering2` to `clustering1`.
 
-    To be aligned the clusterings must have the same number of clusters
+    To be aligned, the clusterings must have the same number of
+    clusters.
 
-    :param clustering1: First clustering, used as reference
-    :type clustering1: List[List[int]]
-    :param clustering2: Second clustering, to be aligned
-    :type clustering2: List[List[int]]
-    :return: Same clusters but "aligned" to `clustering1`
-    :rtype: Tuple[List[List[int]], List[List[int]]]
+    Parameters
+    ----------
+    clustering1 : List[List[int]]
+        First clustering, used as reference.
+    clustering2 : List[List[int]]
+        Second clustering, to be aligned.
+
+    Returns
+    -------
+    Tuple[List[List[int]], List[List[int]]]
+        The reference clustering sorted by descending cluster size and
+        the reordered second clustering aligned to that order.
+
+    Raises
+    ------
+    ValueError
+        If the two clusterings do not have the same number of clusters.
     """
     if len(clustering1) != len(clustering2):
         msg = (

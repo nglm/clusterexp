@@ -100,11 +100,20 @@ ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
 
 def arff_from_github(url, verbose=False):
     """
-    Returns data as arff and metadata if no exceptions were found.
+    Load an ARFF dataset from a URL.
 
-    If an exception was found (e.g. "String attributes not supported
-    yet, sorry"), then returns None for the data and the error message
-    as the meta data.
+    Parameters
+    ----------
+    url : str
+        URL pointing to an ARFF file.
+    verbose : bool, optional
+        If True, print the HTTP status code, by default False.
+
+    Returns
+    -------
+    Tuple[Union[None, np.ndarray], Union[Exception, arff.MetaData]]
+        Parsed ARFF data and metadata when successful. If loading fails,
+        returns ``(None, exception)``.
     """
     try:
         with urllib.request.urlopen(url, timeout=1) as response:
@@ -125,13 +134,29 @@ def print_heads(
     UCR: bool = False,
 ) -> None:
     """
-    Print all dataframe headers from a list of filenames and path.
+    Print summary information and heads for multiple datasets.
 
-    :param fnames: list of filenames
-    :type fnames: List[str]
-    :param path: path to the directory containing all files, defaults to
-        "./"
-    :type path: str, optional
+    Parameters
+    ----------
+    fnames : List[str]
+        Dataset names or filenames.
+    path : str, optional
+        Prefix used to resolve each dataset location, by default "./".
+    n_labels_max : int, optional
+        Threshold used to flag datasets with too many labels,
+        by default 20.
+    n_samples_max : int, optional
+        Threshold used to flag datasets with too many samples,
+        by default 10000.
+    UCR : bool, optional
+        If True, load UCR-formatted files from local TSV paths;
+        otherwise load ARFF datasets, by default False.
+
+    Returns
+    -------
+    Dict[str, Dict]
+        Per-dataset summary containing metadata such as shape,
+        labeling information, and potential loading errors.
     """
     print(f"MAX LABELS: {n_labels_max}\nMAX SAMPLES: {n_samples_max}\n")
     summary = {}
@@ -210,16 +235,22 @@ def load_data_from_github(
     with_labels: bool = True
 ) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
     """
-    Return data, labels and metadata from github url
+    Return data, labels, and metadata from an GitHub ARFF URL.
 
-    Ignore non-numerical variables in the datasets
+    Non-numerical variables are ignored.
 
-    :param url: github url of the dataset
-    :type url: str
-    :param with_labels: _description_, defaults to True
-    :type with_labels: bool, optional
-    :return: _description_
-    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
+    Parameters
+    ----------
+    url : str
+        URL of the dataset.
+    with_labels : bool, optional
+        If True, include labels from the ``class`` column, by default
+        True.
+
+    Returns
+    -------
+    Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
+        Numeric data array, optional labels array, and ARFF metadata.
     """
     data, meta = arff_from_github(url)
     df = pd.DataFrame(data)
@@ -241,7 +272,18 @@ def load_data_from_github(
 
 def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
     """
-    Give the real number of labels and labels in case of n_labels = N
+    Encode labels and infer the effective count.
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        Original label values.
+
+    Returns
+    -------
+    Tuple[np.ndarray, int]
+        Encoded labels and the number of effective classes. If each
+        sample has a unique label, labels are collapsed to one class.
     """
     N = len(labels)
     classes = np.unique(labels)
@@ -263,13 +305,18 @@ def get_data_labels(
     """
     Get dataset, labels, number of labels, and metadata for non UCR data
 
-    :param fname: Filename of the dataset
-    :type fname: str
-    :param path: Path to the file, defaults to "./"
-    :type path: str, optional
-    :return: All information about the dataset, the data, labels, number
-        of labels, and metadata
-    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]
+    Parameters
+    ----------
+    fname : str
+        Dataset filename.
+    path : str, optional
+        Prefix path or URL for the dataset, by default "./".
+
+    Returns
+    -------
+    Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]
+        Data array, optional labels, inferred number of labels, and
+        ARFF metadata.
     """
     n_labels = None
     if fname in UNLABELED:
@@ -294,13 +341,19 @@ def get_data_labels_UCR(
     """
     Get dataset, labels number of labels, and metadata for UCR data
 
-    :param fname: Filename of the dataset
-    :type fname: str
-    :param path: Path to the file, defaults to "./"
-    :type path: str, optional
-    :return: All information about the dataset, the data, labels, number
-        of labels, and metadata
-    :rtype: Tuple[np.ndarray, Union[None, np.ndarray], int, None]
+    Parameters
+    ----------
+    fname : str
+        Path to the UCR TSV file.
+    path : str, optional
+        Unused. Kept for API consistency with other loaders,
+        by default "./".
+
+    Returns
+    -------
+    Tuple[np.ndarray, Union[None, np.ndarray], int, None]
+        Time-series data reshaped as ``(N, T, 1)``, encoded labels,
+        number of labels, and ``None`` metadata.
     """
 
     df = pd.read_csv(fname, sep="\t")
@@ -314,12 +367,17 @@ def get_data_labels_UCR(
 
 def get_list_datasets(fname: str) -> List[str]:
     """
-    Read the file containing the list of dataset names
+    Read a file containing one dataset name per line.
 
-    :param fname: name of the file with the list of dataset names
-    :type fname: str
-    :return: the list of dataset names
-    :rtype: List[str]
+    Parameters
+    ----------
+    fname : str
+        Path to the file with dataset names.
+
+    Returns
+    -------
+    List[str]
+        Dataset names.
     """
     with open(fname) as f:
         datasets = f.read().splitlines()
@@ -373,6 +431,20 @@ def get_list_exp(
     return fnames
 
 def load_json(fname: str) -> Dict:
+    """
+    Load a JSON file and cast numeric string keys to integers.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the JSON file.
+
+    Returns
+    -------
+    Dict
+        Parsed JSON dictionary with digit-only keys converted to
+        integers.
+    """
     def object_hook(json_dict):
         return {
             int(k) if k.isdigit() else k: v
@@ -383,6 +455,16 @@ def load_json(fname: str) -> Dict:
     return d
 
 def write_list_datasets(fname:str, lines: List[str]) -> None:
+    """
+    Write dataset names to a text file, one per line.
+
+    Parameters
+    ----------
+    fname : str
+        Output file path.
+    lines : List[str]
+        Dataset names to write.
+    """
     with open(fname, 'w') as f:
         f.write('\n'.join(lines))
 
@@ -394,15 +476,22 @@ def get_fname(
     """
     Find the filename (or root) corresponding to the UCR dataset
 
-    :param d: dataset name
-    :type d: str
-    :param only_root: defaults to False
-    :type only_root: bool, optional
-    :param data_source: Dataset source ("UCR", "artificial" or
-        "real-world")
-    :type data_source: str
-    :return: The filename (or root) corresponding to the dataset
-    :rtype: str
+    Parameters
+    ----------
+    d : str
+        Dataset name.
+    only_root : bool, optional
+        If True and ``data_source == 'UCR'``, return only the dataset
+        directory path, by default False.
+    data_source : str, optional
+        Dataset source: ``"UCR"``, ``"artificial"``, or
+        ``"real-world"``, by default ``"artificial"``.
+
+    Returns
+    -------
+    str
+        Dataset filename or root path depending on ``data_source`` and
+        ``only_root``.
     """
     fname = ""
     if data_source == "UCR":
