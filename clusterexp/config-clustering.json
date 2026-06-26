@@ -1,0 +1,45 @@
+{
+    "config_clustering": {
+        "VI_max": 0.2,
+        "seed": 221,
+        "k_range": [1, 25],
+        "KMeans": {
+            "model_class": "sklearn.cluster.KMeans",
+            "model_kw": {},
+            "fit_predict_kw": {},
+            "scaler": "StandardScaler"
+        },
+
+        "Agglomerative-Ward": {
+            "model_class": "sklearn.cluster.AgglomerativeClustering",
+            "model_kw": {
+                "linkage": "ward",
+                "metric": "euclidean"
+            },
+            "fit_predict_kw": {},
+            "scaler": "StandardScaler"
+        },
+        "Agglomerative-Single": {
+            "model_class": "sklearn.cluster.AgglomerativeClustering",
+            "model_kw": {
+                "linkage": "single",
+                "metric": "euclidean"
+            },
+            "fit_predict_kw": {},
+            "scaler": "StandardScaler"
+        },
+
+        "SpectralClustering": {
+            "model_class": "sklearn.cluster.SpectralClustering",
+            "model_kw": {},
+            "fit_predict_kw": {},
+            "scaler": "StandardScaler"
+        },
+        "KMedoids": {
+            "model_class": "kmedoids.KMedoids",
+            "model_kw": {},
+            "fit_predict_kw": {},
+            "scaler": "StandardScaler"
+        }
+    }
+}
