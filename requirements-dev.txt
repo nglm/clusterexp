@@ -19,6 +19,8 @@ joblib==1.5.3
     # via scikit-learn
 kiwisolver==1.5.0
     # via matplotlib
+kmedoids==0.5.5
+    # via clusterexp
 llvmlite==0.46.0
     # via numba
 matplotlib==3.10.9
@@ -33,7 +35,6 @@ numpy==2.3.5
     #   numba
     #   pandas
     #   scikit-learn
-    #   scikit-learn-extra
     #   scipy
 packaging==26.2
     # via
@@ -46,7 +47,7 @@ pillow==12.2.0
     # via matplotlib
 pluggy==1.6.0
     # via pytest
-pycvi-lib==0.1.7
+pycvi-lib==1.0.0
     # via clusterexp
 pygments==2.20.0
     # via pytest
@@ -60,16 +61,11 @@ python-dateutil==2.9.0.post0
 pytz==2026.2
     # via pandas
 scikit-learn==1.7.2
-    # via
-    #   aeon
-    #   scikit-learn-extra
-scikit-learn-extra==0.3.0
-    # via clusterexp
+    # via aeon
 scipy==1.17.1
     # via
     #   aeon
     #   scikit-learn
-    #   scikit-learn-extra
 six==1.17.0
     # via python-dateutil
 threadpoolctl==3.6.0

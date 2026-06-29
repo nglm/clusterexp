@@ -26,9 +26,10 @@ name = "clusterexp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "kmedoids" },
     { name = "matplotlib" },
     { name = "pycvi-lib" },
-    { name = "scikit-learn-extra" },
+    { name = "scikit-learn" },
 ]
 
 [package.dev-dependencies]
@@ -38,9 +39,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "kmedoids", specifier = ">=0.5.5" },
     { name = "matplotlib", specifier = ">=3.10.9" },
-    { name = "pycvi-lib", specifier = ">=0.1.7" },
-    { name = "scikit-learn-extra", specifier = ">=0.3.0" },
+    { name = "pycvi-lib", specifier = ">=1.0.0" },
+    { name = "scikit-learn", specifier = ">=1.7.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -188,6 +190,23 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/18/43a5f24608d8c313dd189cf838c8e68d75b115567c6279de7796197cfb6a/kiwisolver-1.5.0-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:e7a116ae737f0000343218c4edf5bd45893bfeaff0993c0b215d7124c9f77646", size = 2394403, upload-time = "2026-03-09T13:15:31.517Z" },
     { url = "https://files.pythonhosted.org/packages/3b/b5/98222136d839b8afabcaa943b09bd05888c2d36355b7e448550211d1fca4/kiwisolver-1.5.0-cp314-cp314t-win_amd64.whl", hash = "sha256:1dd9b0b119a350976a6d781e7278ec7aca0b201e1a9e2d23d9804afecb6ca681", size = 79687, upload-time = "2026-03-09T13:15:33.204Z" },
     { url = "https://files.pythonhosted.org/packages/99/a2/ca7dc962848040befed12732dff6acae7fb3c4f6fc4272b3f6c9a30b8713/kiwisolver-1.5.0-cp314-cp314t-win_arm64.whl", hash = "sha256:58f812017cd2985c21fbffb4864d59174d4903dd66fa23815e74bbc7a0e2dd57", size = 70032, upload-time = "2026-03-09T13:15:34.411Z" },
+]
+
+[[package]]
+name = "kmedoids"
+version = "0.5.5"
+source = { registry = "https://pypi.org/simple" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/58/b2/cc0c64f398935f9a6d24c0b9b6bd705931631757a7a71c0278b80da289af/kmedoids-0.5.5-cp314-cp314-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:861f0795cc8afff01ca9af5c6fc24d216a7938895d792d65709936e07f07cddf", size = 809442, upload-time = "2026-05-23T13:15:20.596Z" },
+    { url = "https://files.pythonhosted.org/packages/15/d1/7bbc4226f87ee5fc6e3473ad2580103c6abcd0524c59382eee308676aba0/kmedoids-0.5.5-cp314-cp314-manylinux_2_28_aarch64.whl", hash = "sha256:2fc723f21fcad47bd952bc05a233b8163a20be9681455b7e1d2544356852e9af", size = 423702, upload-time = "2026-05-23T13:15:22.316Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/62/fd80b2b72be0531f8bb9debff75fa6e1cd6ea3d26a0d660d21c5c989ab2b/kmedoids-0.5.5-cp314-cp314-manylinux_2_28_x86_64.whl", hash = "sha256:df7f17cfdf0c105a2f321236d05ae85695daabf31e78f0e9e2340a6e8c3e39da", size = 457157, upload-time = "2026-05-23T13:15:23.819Z" },
+    { url = "https://files.pythonhosted.org/packages/4f/e2/9ec167d486428f4e92d951c6380d9d3fd72da443715b31788ba88fb3499e/kmedoids-0.5.5-cp314-cp314-musllinux_1_2_aarch64.whl", hash = "sha256:9b91f56317ad2b27106e363c375e9e37cdaf76afaf61bcb8d3ecd0eb1672dcf6", size = 489587, upload-time = "2026-05-23T13:15:25.401Z" },
+    { url = "https://files.pythonhosted.org/packages/78/c4/36512c6258aac788e8fb2fcaf5cce8dfdeb1d88027d385cc08aedbcc88b8/kmedoids-0.5.5-cp314-cp314-musllinux_1_2_x86_64.whl", hash = "sha256:fe0e22b1c32b983b2d551977f5f710cc291561a5b9e1fb82966c540346424f8c", size = 532640, upload-time = "2026-05-23T13:15:27.352Z" },
+    { url = "https://files.pythonhosted.org/packages/17/2f/5d3c957fc56dfad8aaf264cdec79acfc8451bbcb5835b969fbfb140502d0/kmedoids-0.5.5-cp314-none-win_amd64.whl", hash = "sha256:0ac7302edb39496529a19d908b6a8f12bf641d594e50c66b64a6fb9429bc004a", size = 371181, upload-time = "2026-05-23T13:15:29.014Z" },
+    { url = "https://files.pythonhosted.org/packages/c5/50/23aa3304f1a4de5e14a99e39b040d523ad59eca43390e072f3278d80a767/kmedoids-0.5.5-cp315-cp315-manylinux_2_28_aarch64.whl", hash = "sha256:087d5cc4550db6cb06b45b31d5ad5734b51b2c1d0f565021e336b97f653921d3", size = 423664, upload-time = "2026-05-23T13:15:30.753Z" },
+    { url = "https://files.pythonhosted.org/packages/2e/5b/ab5856be6fcfe2d54bdad0d01e0bc07c90fe5de82659baaff42f42387952/kmedoids-0.5.5-cp315-cp315-manylinux_2_28_x86_64.whl", hash = "sha256:f6fc253859a594c01b57a0df046903a45cb91fb553d5600deb580d6bef3811ae", size = 457302, upload-time = "2026-05-23T13:15:32.221Z" },
+    { url = "https://files.pythonhosted.org/packages/9b/cd/e67d45d057ed5870d3d3b8d53d955f88f0ea858f90b577981550699c27bb/kmedoids-0.5.5-cp315-cp315-musllinux_1_2_aarch64.whl", hash = "sha256:65776cadadb06f839182ae32731dd7b7628cf862125182261d016ca80095a6c6", size = 489624, upload-time = "2026-05-23T13:15:34.117Z" },
+    { url = "https://files.pythonhosted.org/packages/76/b6/ced74de840b7a72218ebffa925efd491af7c399d480b4fbfa1ddd398cfc2/kmedoids-0.5.5-cp315-cp315-musllinux_1_2_x86_64.whl", hash = "sha256:1bc7adb0a0f04d4d05d8dc8315d63bada6263be154df913520eaeea1bcfaf14c", size = 532703, upload-time = "2026-05-23T13:15:36.022Z" },
 ]
 
 [[package]]
@@ -361,14 +380,14 @@ wheels = [
 
 [[package]]
 name = "pycvi-lib"
-version = "0.1.7"
+version = "1.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aeon" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/aa/23/affbfbc2038d0ce8608da3b31abe497f2861392ce746f8569e0f956c1deb/pycvi_lib-0.1.7.tar.gz", hash = "sha256:6dc4f51c23a0f2860d8bd5770bb483a27e32ab3a7a203cd8cd972d9ef105274a", size = 326014, upload-time = "2026-06-12T13:29:58.826Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/81/bd/96262d4dbef18059e80603dc262c65d5c82f69d9bb3caa6bf051b7bc4fdd/pycvi_lib-1.0.0.tar.gz", hash = "sha256:23f406b8a86f6d0bd71abea083c69fa8c99828d460d63be5469e6305db88d205", size = 330152, upload-time = "2026-06-25T13:03:32.554Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/73/195fc73f1315dd938f6806fca9b060e3aefdc331a8646eeb084552cd38d2/pycvi_lib-0.1.7-py3-none-any.whl", hash = "sha256:2cbba9a76d04a36212f4b349e0650fd252be0a2624f762a945b235ea9f674398", size = 333690, upload-time = "2026-06-12T13:29:52.37Z" },
+    { url = "https://files.pythonhosted.org/packages/b9/be/e5a07cd3e205f861212b4059c52005439a5bdacd4f373f547ca9d178bfe6/pycvi_lib-1.0.0-py3-none-any.whl", hash = "sha256:6a16c866bba43911410ffc9f3a6a815ad689923a4eae68e317e19eff9632e21c", size = 338965, upload-time = "2026-06-25T13:03:24.571Z" },
 ]
 
 [[package]]
@@ -444,17 +463,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/99/7e/290362f6ab582128c53445458a5befd471ed1ea37953d5bcf80604619250/scikit_learn-1.7.2-cp314-cp314-manylinux_2_27_aarch64.manylinux_2_28_aarch64.whl", hash = "sha256:96dc05a854add0e50d3f47a1ef21a10a595016da5b007c7d9cd9d0bffd1fcc61", size = 9312593, upload-time = "2025-09-09T08:21:24.65Z" },
     { url = "https://files.pythonhosted.org/packages/8e/87/24f541b6d62b1794939ae6422f8023703bbf6900378b2b34e0b4384dfefd/scikit_learn-1.7.2-cp314-cp314-win_amd64.whl", hash = "sha256:bb24510ed3f9f61476181e4db51ce801e2ba37541def12dc9333b946fc7a9cf8", size = 8820007, upload-time = "2025-09-09T08:21:26.713Z" },
 ]
-
-[[package]]
-name = "scikit-learn-extra"
-version = "0.3.0"
-source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "numpy" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/1d/9a/dd90a682fe322b3f4d3bd909dc3316883223e1cbe71e15e7d729e3630d57/scikit-learn-extra-0.3.0.tar.gz", hash = "sha256:7912d43384470d77609e53819d0291967f21010e5c3a3847f9026fc02f9c7893", size = 818996, upload-time = "2023-03-27T11:23:14.477Z" }
 
 [[package]]
 name = "scipy"

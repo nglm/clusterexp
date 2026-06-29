@@ -64,34 +64,34 @@ def define_globals(source_number: int = 0, local=True, use_DTW=False):
     else:
         PATH_UCR = PATH_UCR_REMOTE
 
-def metric_ts_aux(X, dist_kwargs={}, d=1, w_t=None):
-    """
-    Use the right metric when using UCR with DTW.
+# def metric_ts_aux(X, dist_kwargs={}, d=1, w_t=None):
+#     """
+#     Use the right metric when using UCR with DTW.
 
-    Reshape X back to its original shape (N, T, d) because regular
-    sklearn clustering methods (KMedoids, Agglomerative) need a (N, d*T)
-    shape, while to compute the distances we need to go back to (N, T,
-    d)
+#     Reshape X back to its original shape (N, T, d) because regular
+#     sklearn clustering methods (KMedoids, Agglomerative) need a (N, d*T)
+#     shape, while to compute the distances we need to go back to (N, T,
+#     d)
 
-    From sklearn.metrics.pairwise_distances:
+#     From sklearn.metrics.pairwise_distances:
 
-    "if metric is a callable function, it is called on each pair of
-    instances (rows) and the resulting value recorded. The callable
-    should take two arrays from X as input and return a value indicating
-    the distance between them."
+#     "if metric is a callable function, it is called on each pair of
+#     instances (rows) and the resulting value recorded. The callable
+#     should take two arrays from X as input and return a value indicating
+#     the distance between them."
 
-    Note that in UCR d is always 1!
-    """
-    dims = X.shape
-    N = len(X)
-    if w_t is None:
-        w_t = dims[-1]
-    # If using DTW and data is UCR: go from (N, T*d) to (N, T, d)
-    # assuming we had either (N, T*1) or (N, T, d) to begin with
-    shape = (X, w_t, d)
-    X_dis = np.reshape(X, shape)
+#     Note that in UCR d is always 1!
+#     """
+#     dims = X.shape
+#     N = len(X)
+#     if w_t is None:
+#         w_t = dims[-1]
+#     # If using DTW and data is UCR: go from (N, T*d) to (N, T, d)
+#     # assuming we had either (N, T*1) or (N, T, d) to begin with
+#     shape = (X, w_t, d)
+#     X_dis = np.reshape(X, shape)
 
-    return f_pdist(X_dis, dist_kwargs=dist_kwargs)
+#     return f_pdist(X_dis, dist_kwargs=dist_kwargs)
 
 def experiment(
     X,

@@ -4,42 +4,47 @@
         "seed": 221,
         "k_range": [1, 25],
         "KMeans": {
-            "model_class": "sklearn.cluster.KMeans",
+            "model": "sklearn.cluster.KMeans",
             "model_kw": {},
             "fit_predict_kw": {},
-            "scaler": "StandardScaler"
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
         },
 
         "Agglomerative-Ward": {
-            "model_class": "sklearn.cluster.AgglomerativeClustering",
+            "model": "sklearn.cluster.AgglomerativeClustering",
             "model_kw": {
                 "linkage": "ward",
                 "metric": "euclidean"
             },
             "fit_predict_kw": {},
-            "scaler": "StandardScaler"
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
         },
         "Agglomerative-Single": {
-            "model_class": "sklearn.cluster.AgglomerativeClustering",
+            "model": "sklearn.cluster.AgglomerativeClustering",
             "model_kw": {
                 "linkage": "single",
                 "metric": "euclidean"
             },
             "fit_predict_kw": {},
-            "scaler": "StandardScaler"
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
         },
 
         "SpectralClustering": {
-            "model_class": "sklearn.cluster.SpectralClustering",
+            "model": "sklearn.cluster.SpectralClustering",
             "model_kw": {},
             "fit_predict_kw": {},
-            "scaler": "StandardScaler"
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
         },
         "KMedoids": {
-            "model_class": "kmedoids.KMedoids",
+            "model": "kmedoids.KMedoids",
             "model_kw": {},
             "fit_predict_kw": {},
-            "scaler": "StandardScaler"
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
         }
     }
 }

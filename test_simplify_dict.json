@@ -1,0 +1,33 @@
+{
+  "VI_max": 0.2,
+  "seed": 221,
+  "k_range": [
+    1,
+    25
+  ],
+  "KMeans": {
+    "model_class": "sklearn.cluster._kmeans.KMeans",
+    "model_kw": {
+      "random_state": "Instance of numpy.random.mtrand.RandomState"
+    },
+    "fit_predict_kw": {},
+    "scaler": "sklearn.preprocessing._data.StandardScaler",
+    "scaler_kw": {}
+  },
+  "some_array": [
+    [
+      1.0,
+      1.0
+    ],
+    [
+      1.0,
+      1.0
+    ],
+    [
+      1.0,
+      1.0
+    ]
+  ],
+  "some_function": "numpy.ones",
+  "some_class": "sklearn.cluster._kmeans.KMeans"
+}
