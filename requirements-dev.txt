@@ -61,7 +61,9 @@ python-dateutil==2.9.0.post0
 pytz==2026.2
     # via pandas
 scikit-learn==1.7.2
-    # via aeon
+    # via
+    #   aeon
+    #   clusterexp
 scipy==1.17.1
     # via
     #   aeon
