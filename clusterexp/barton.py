@@ -1,3 +1,14 @@
+import io
+import urllib.request
+from scipy.io import arff
+
+import pandas as pd
+import numpy as np
+import os
+import json
+
+from typing import List, Dict, Tuple, Union
+
 URL_ROOT = 'https://raw.githubusercontent.com/nglm/clustering-benchmark/master/src/main/resources/datasets/'
 
 N_SAMPLES_MAX = 10000
@@ -60,6 +71,28 @@ TOO_MANY_SAMPLES = [
     "letter.arff",
 ]
 
+def get_list_datasets_from_github(
+        data_source: str = "artificial",
+        with_unknown_k: bool = True,
+        with_invalid: bool = True,
+    ) -> List[str]:
+    """
+    Get the list of datasets from the GitHub repository.
+    """
+    all_datasets = []
+    for line in urllib.request.urlopen(f"{URL_ROOT}{data_source}.txt"):
+        all_datasets.append(line.decode('utf-8').strip())
+
+    if not with_unknown_k:
+        all_datasets = [
+            f for f in all_datasets
+            if not (f in UNKNOWN_K and f not in UNIMODAL)
+        ]
+    if not with_invalid:
+        all_datasets = [f for f in all_datasets if f not in INVALID]
+
+    return all_datasets
+
 def arff_from_github(url, verbose=False):
     """
     Load an ARFF dataset from a URL.
@@ -112,54 +145,126 @@ def load_data_from_github(
     """
     data, meta = arff_from_github(url)
     df = pd.DataFrame(data)
-    df.columns = df.columns.str.lower()
     # We keep only numerical variables
     data_col = [
         c for c, t in zip(df.columns, df.dtypes)
-        if (c != "class") and t in ["float", "int"]
+        if (str(c).lower() != "class") and t in ["float", "int"]
     ]
+    class_col = [c for c in df.columns if str(c).lower() == "class"]
     # Get only data, not the labels and convert to numpy
     if with_labels:
 
         data = df[data_col].to_numpy()
-        labels = df["class"].to_numpy()
+        labels = df[class_col].to_numpy()
     else:
         data = df[data_col].to_numpy()
         labels = None
     return data, labels, meta
 
+def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
+    """
+    Encode labels and infer the effective count.
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        Original label values.
+
+    Returns
+    -------
+    Tuple[np.ndarray, int]
+        Encoded labels and the number of effective classes. If each
+        sample has a unique label, labels are collapsed to one class.
+    """
+    N = len(labels)
+    # Find unique classes and map them to integers
+    labels = labels.flatten()
+    classes = np.unique(labels)
+    map_classes = {c:i for i,c in enumerate(classes)}
+    n_labels = len(classes)
+
+    if n_labels == N:
+        n_labels = 1
+        new_labels = np.zeros_like(labels, dtype=int)
+    else:
+        new_labels = np.array(
+            [map_classes[label] for label in labels],
+            dtype=int)
+    return new_labels, n_labels
+
 def get_data_labels(
     fname: str,
-    path: str ="./"
-) -> Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]:
+    url: str,
+) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
     """
-    Get dataset, labels, number of labels, and metadata for non UCR data
+    Get dataset, labels, and metadata from GitHub
+
+    It is important to keep fname and url separate, as fname is used to
+    check if the dataset is in the UNLABELED or UNIMODAL lists.
+
+    The returned labels is ``None`` if the dataset had no labels originally
+    provided, and if we can not a priori assume that the dataset is unimodal.
 
     Parameters
     ----------
     fname : str
         Dataset filename.
-    path : str, optional
-        Prefix path or URL for the dataset, by default "./".
+    url : str,
+        URL for the dataset
 
     Returns
     -------
-    Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]
-        Data array, optional labels, inferred number of labels, and
-        ARFF metadata.
+    Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
+        Data array, optional labels, and ARFF metadata.
     """
     n_labels = None
+
+    # If the dataset is in the UNLABELED list, we don't expect labels
+    # But it could be unimodal, in which case we set n_labels to 1
     if fname in UNLABELED:
-        with_labels = False
+        with_labels = False       # No labels originally provided
         if fname in UNIMODAL:
             n_labels = 1
         else:
             n_labels = None
     else:
-        with_labels = True
+        with_labels = True        # Labels originally provided
+
+    # Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
+    # labels is None if there were no labels originally provided
     data, labels, meta = load_data_from_github(
-        path + fname, with_labels=with_labels
+        url + fname, with_labels=with_labels
     )
+
+    # If there were labels originally provided
     if with_labels:
         labels, n_labels = process_labels(labels)
-    return data, labels, n_labels, meta
+    # If there were no labels provided but we know it's unimodal
+    # Then create a unique class
+    elif n_labels == 1:
+        label_shape = (len(data), )
+        labels = np.zeros(label_shape, dtype=int)
+
+    return data, labels, meta
+
+def save_data_labels_from_github(
+    dataset_names: List[str],
+    path_data: str = "./",
+    data_source: str = "artificial",
+) -> None:
+    """
+    Save data and labels from GitHub to CSV files.
+    """
+    os.makedirs(path_data, exist_ok=True)
+
+    for d in dataset_names:
+        data, labels, meta = get_data_labels(
+            fname=d, url=f"{URL_ROOT}{data_source}/"
+        )
+        # labels = labels.astype(float)
+        pd.DataFrame(labels).to_csv(
+            f"{path_data}{d}_labels.csv", header=False, index=False,
+        )
+        pd.DataFrame(data).to_csv(
+            f"{path_data}{d}_data.csv", header=False, index=False,
+        )

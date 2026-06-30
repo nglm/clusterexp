@@ -6,6 +6,18 @@ This module assumes that the data is already formatted as expected, with a file 
 Functions defined here are general to all datasets.
 """
 
+import io
+import urllib.request
+from scipy.io import arff
+
+import pandas as pd
+import numpy as np
+import os
+import json
+from pathlib import Path
+
+from typing import List, Dict, Tuple, Union
+
 def print_heads(
     fnames: List[str],
     path:str = "./",
@@ -110,33 +122,41 @@ def print_heads(
     return summary
 
 
-def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
+def get_data_labels(
+    fname: str,
+    path: str ="./"
+) -> Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]:
     """
-    Encode labels and infer the effective count.
+    Get dataset, labels, number of labels, and metadata for non UCR data
 
     Parameters
     ----------
-    labels : np.ndarray
-        Original label values.
+    fname : str
+        Dataset filename.
+    path : str, optional
+        Prefix path or URL for the dataset, by default "./".
 
     Returns
     -------
-    Tuple[np.ndarray, int]
-        Encoded labels and the number of effective classes. If each
-        sample has a unique label, labels are collapsed to one class.
+    Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]
+        Data array, optional labels, inferred number of labels, and
+        ARFF metadata.
     """
-    N = len(labels)
-    classes = np.unique(labels)
-    map_classes = {c:i for i,c in enumerate(classes)}
-    n_labels = len(classes)
-    if n_labels == N:
-        n_labels = 1
-        labels = np.zeros_like(labels, dtype=int)
+    n_labels = None
+    if fname in UNLABELED:
+        with_labels = False
+        if fname in UNIMODAL:
+            n_labels = 1
+        else:
+            n_labels = None
     else:
-        labels = np.array(
-            [map_classes[label] for label in labels],
-            dtype=int)
-    return labels, n_labels
+        with_labels = True
+    data, labels, meta = load_data_from_github(
+        path + fname, with_labels=with_labels
+    )
+    if with_labels:
+        labels, n_labels = process_labels(labels)
+    return data, labels, n_labels, meta
 
 
 def get_list_datasets(fname: str) -> List[str]:
@@ -169,5 +189,8 @@ def write_list_datasets(fname:str, lines: List[str]) -> None:
     lines : List[str]
         Dataset names to write.
     """
+    p = Path(fname)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
     with open(fname, 'w') as f:
         f.write('\n'.join(lines))
