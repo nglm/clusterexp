@@ -233,6 +233,32 @@ CONFIG_DEFAULT_VALUES = {
     }
 }
 
+def get_mandatory_keys() -> dict:
+    """return the mandatory keys of each config type"""
+
+    keys = {
+        "config_data" : {
+            "mandatory" : [
+                "path_data", "path_res", "max_n_samples", "max_n_labels",
+                "max_n_dims", "exclude", "include_only",
+            ],
+            "lower" : None,
+        },
+        "config_clustering" : {
+            "mandatory" : ["VI_max", "seed", "k_range"],
+            "lower" : [
+                "model", "model_kw", "fit_predict_kw",
+                "scaler", "scaler_kw",
+            ],
+        },
+        "config_CVI" : {
+            "mandatory" : ["seed"],
+            "lower" : ["cvi", "cvi_kw"],
+        },
+    }
+
+    return keys
+
 def make_default_config(
     filenames: Union[str, Sequence[str]] = [
         "config-data.json", "config-clustering.json",
@@ -283,6 +309,10 @@ def get_obj_from_string(obj_str: str) -> Any:
     The object can be a class or a function. The string must be of the
     form `"package.module.class"` or `"package.module.function"`.
 
+    Both the hidden and non-hidden module names are supported.
+    The hidden module name is the one that is used when importing a
+    class or function
+
     The corresponding class or function will be imported.
 
     If the string is not of the correct form, an ImportError will be
@@ -303,7 +333,23 @@ def get_obj_from_string(obj_str: str) -> Any:
     module = importlib.import_module(module_path)
     return getattr(module, obj_name)
 
+def class_to_string(cls):
+    """
+    Return the string corresponding to a class.
+
+    Note that this can yield the "hidden" class of an object, with
+    hidden module names
+    """
+    return f"{cls.__module__}.{cls.__name__}"
+
+def obj_to_string(obj):
+    cls = obj.__class__
+    return f"Instance of {cls.__module__}.{cls.__name__}"
+
 def serialize(obj):
+    """
+    Serialize an object to a JSON-compatible format.
+    """
     # To check if the object is serializable
     try:
         json.dumps(obj)
@@ -326,13 +372,6 @@ def serialize(obj):
             else:
                 res = obj_to_string(obj)
         return res
-
-def class_to_string(cls):
-    return f"{cls.__module__}.{cls.__name__}"
-
-def obj_to_string(obj):
-    cls = obj.__class__
-    return f"Instance of {cls.__module__}.{cls.__name__}"
 
 def add_default(config:dict) -> dict:
     """
@@ -380,9 +419,9 @@ def add_default(config:dict) -> dict:
 
 def simplify_config_dict(config:dict) -> dict:
     """
-    Translate a given dict to a jsonable dict"
+    Translate a given dict to a jsonable dict
 
-    Make sure that classes and objects are written as package.module.class
+    Classes and functions will be written as package.module.class
     """
     #normal_types = [Sequence, str, list, dict, int, float, bool, type(None)]
 
@@ -394,7 +433,11 @@ def simplify_config_dict(config:dict) -> dict:
 
 def interpret_saved_dict(config:dict) -> dict:
     """
-    Translate a given dict to a config dict, using classes and functions"
+    Translate a given dict to a config dict, using classes and functions
+
+    Make sure that classes and functions are written as package.module.class
+
+    This function will also add the default values to the config.
     """
 
     interpreted_dict = {}
@@ -403,7 +446,9 @@ def interpret_saved_dict(config:dict) -> dict:
         if isinstance(v, str):
             try:
                 interpreted_dict[k] = get_obj_from_string(v)
-            except (ImportError, AttributeError):
+            # If there was an error, it's probably because this was a regular
+            # string, not a string representing a class or function
+            except (ImportError, AttributeError, ValueError):
                 interpreted_dict[k] = v
         # If the value is a dict, recursively interpret it
         elif isinstance(v, dict):
@@ -411,6 +456,13 @@ def interpret_saved_dict(config:dict) -> dict:
         # Else, assume that the format is correct and keep the value as is
         else:
             interpreted_dict[k] = v
+
+    # Check if we are in the top level case (this function is recursive)
+    top_level_keys = {"config_data", "config_clustering", "config_CVI"}
+    # Check that intersection of subsets is not empty
+    if interpreted_dict.keys() & top_level_keys:
+        # Then it's time to add default values to the config
+        interpreted_dict = add_default(interpreted_dict)
     return interpreted_dict
 
 
@@ -418,39 +470,13 @@ def load_config_as_dict(config_fname: str) -> dict:
     """
     Load a given config (json file) as a dict"
 
-    Make sure that classes and objects that are written as package.module.class,
-    are then loaded properly, as objects and classes, not as strings
+    Interpret classes and objects that are written as package.module.class,
+    and then load them properly, as objects and classes, not as strings
     """
     with open(config_fname, "r") as f:
         config_dict = json.load(f)
     return interpret_saved_dict(config_dict)
 
-
-def get_mandatory_keys() -> dict:
-    """return the mandatory keys of each config type"""
-
-    keys = {
-        "config_data" : {
-            "mandatory" : [
-                "path_data", "path_res", "max_n_samples", "max_n_labels",
-                "max_n_dims", "exclude", "include_only",
-            ],
-            "lower" : None,
-        },
-        "config_clustering" : {
-            "mandatory" : ["VI_max", "seed", "k_range"],
-            "lower" : [
-                "model", "model_kw", "fit_predict_kw",
-                "scaler", "scaler_kw",
-            ],
-        },
-        "config_CVI" : {
-            "mandatory" : ["seed"],
-            "lower" : ["cvi", "cvi_kw"],
-        },
-    }
-
-    return keys
 
 def get_models_config(config:dict) -> dict:
     """
@@ -461,6 +487,10 @@ def get_models_config(config:dict) -> dict:
     model_config = {}
 
     for config_type, config_keys in all_keys.items():
+
+        if config_type not in config:
+            # Skip this config type if it is not present in the given config
+            continue
 
         # Get keys that are not mandatory (and thus model keys)
         # And extract the config of each model (clustering or cvi)

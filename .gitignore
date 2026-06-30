@@ -20,3 +20,6 @@ TimeSeriesKMeans/
 KMedoids/
 SpectralClustering/
 
+# no test outputs
+test/*
+
