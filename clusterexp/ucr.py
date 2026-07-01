@@ -1,3 +1,11 @@
+import pandas as pd
+import numpy as np
+import os
+from pathlib import Path
+from scipy.io import arff
+
+from typing import List, Dict, Tuple, Union
+
 HOME_DIR = os.path.expanduser('~')
 PATH_UCR_LOCAL = f"{HOME_DIR}/Documents/Work/Data/UCR/UCRArchive_2018/"
 PATH_UCR_REMOTE = f"{HOME_DIR}/UCR/UCRArchive_2018/"

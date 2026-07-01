@@ -2,7 +2,6 @@ from typing import Any, Sequence, Union
 import inspect
 import json
 import numpy as np
-import os
 from pathlib import Path
 
 import importlib
@@ -15,7 +14,7 @@ CONFIG_DATA_BASE = {
         "path_res" : "./res/",
         "max_n_samples" : 10000,
         "max_n_labels" : 20,
-        "max_n_dims" : None,
+        "max_n_dims" : float('inf'),
         "exclude" : [],
         "include_only" : [],
     }
@@ -209,14 +208,14 @@ CONFIG_DEFAULT_VALUES = {
     "config_data" : {
         "path_data" : "",
         "path_res" : "",
-        "max_n_samples" : None,
-        "max_n_labels" : None,
-        "max_n_dims" : None,
+        "max_n_samples" : float('inf'),
+        "max_n_labels" : float('inf'),
+        "max_n_dims" : float('inf'),
         "exclude" : [],
         "include_only" : [],
     },
     "config_clustering" : {
-        "VI_max" : None,
+        "VI_max" : float('inf'),
         "seed" : 221,
         "lower" : {
             "model_kw" : {},
@@ -234,26 +233,47 @@ CONFIG_DEFAULT_VALUES = {
 }
 
 def get_mandatory_keys() -> dict:
-    """return the mandatory keys of each config type"""
+    """
+    Return the mandatory keys and their expected type in a config dict
+    """
 
     keys = {
         "config_data" : {
-            "mandatory" : [
-                "path_data", "path_res", "max_n_samples", "max_n_labels",
-                "max_n_dims", "exclude", "include_only",
-            ],
+            "mandatory" : {
+                "path_data": str,
+                "path_res": str,
+                "max_n_samples": (int, float),
+                "max_n_labels": (int, float),
+                "max_n_dims": (int, float),
+                "exclude": list,
+                "include_only": list
+            },
             "lower" : None,
         },
         "config_clustering" : {
-            "mandatory" : ["VI_max", "seed", "k_range"],
-            "lower" : [
-                "model", "model_kw", "fit_predict_kw",
-                "scaler", "scaler_kw",
-            ],
+            "mandatory" : {
+                "VI_max": (int, float),
+                "seed": int,
+                "k_range": (list, tuple, np.ndarray),
+            },
+            "lower" : {
+                # Interpreted: object, but saved: str
+                "model" : object,
+                "model_kw": dict,
+                "fit_predict_kw": dict,
+                # Interpreted: object or None, but saved: str or NoneType
+                "scaler": object,
+                "scaler_kw": dict,
+            },
         },
         "config_CVI" : {
-            "mandatory" : ["seed"],
-            "lower" : ["cvi", "cvi_kw"],
+            "mandatory" : {
+                "seed": int
+            },
+            "lower" : {
+                "cvi": object,
+                "cvi_kw": dict
+            },
         },
     }
 
@@ -502,7 +522,7 @@ def get_models_config(config:dict) -> dict:
     return model_config
 
 
-def check_config(config:dict) -> bool:
+def check_config( config:dict, ) -> bool:
     """
     Check that the config has all necessary keys (after adding default).
 
