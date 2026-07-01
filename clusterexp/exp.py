@@ -1,9 +1,15 @@
 import sys
 from datetime import datetime
+import numpy as np
+import time
+from pycvi.cluster import get_clustering, generate_all_clusterings
 
-from .config import load_config_as_dict
-from .data import find_datasets, filter_datasets
-from .utils import save_log, print_log
+from .config import load_config_as_dict, get_models_config
+from .data import find_datasets, filter_datasets, load_data_labels, is_time_series
+from .utils import save_log, print_log, interpret_saved_dict
+from .clustering import compute_VI_quality
+
+from typing import Union
 
 def prepare_data(config_fname:str) -> dict:
     """
@@ -25,10 +31,12 @@ def prepare_data(config_fname:str) -> dict:
     """
     # ---------------- Read config file ---------------------
     config = load_config_as_dict(config_fname)
+    if "config_data" not in config:
+        raise ValueError("The config file must contain a 'config_data' key.")
     path_data = config['config_data']['path_data']
     path_res = config['config_data']['path_res']
 
-    # ---------------- Prepare log files ---------------------
+    # ----------- Prepare current log files ------------------
     full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
     log_fname = f'{path_res}log-data-{full_date}'
     fout = open(f"{log_fname}.txt", 'wt')
@@ -55,6 +63,146 @@ def prepare_data(config_fname:str) -> dict:
     log['log_data'].update(filtered_datasets)
 
     # ---------------- Save log files ------------------------
+    save_log(
+        f"{log_fname}.json", log,
+        overwrite=True, add_date=False, new_name=True, verbose=False,
+    )
+
+    print_log(log)
+
+    fout.close()
+    return log
+
+
+
+def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None) -> dict:
+    """
+    Create clustering experiments for each dataset in the log file
+
+    - Extract clustering model configuration from the config file
+    - Get list of kept datasets based on log_data
+    - for each dataset
+        - Load data and labels
+        - Get the true clusters from the labels
+        - Decide whether whether to use ts_dist based on data shape
+        for each clustering model in the config file:
+            - instanciate scaler
+            - call pycvi generate all clusterings
+                - data
+                - a model class
+                - n_clusters_range
+                - ts_dist (based on data shape)
+                - model_kw
+                - fit_predict_kw
+                - an instanciated scaler (should be instanciated beforehand)
+                - verbose
+            - save clustering file
+                - clusterings
+                - VI
+                - quality
+    """
+    # ------------- Read config file and previous log ------------------
+    t_start = time.time()
+
+    config = load_config_as_dict(config_fname)
+    if "config_clustering" not in config:
+        raise ValueError("The config file must contain a 'config_clustering' key.")
+
+    if log_data_fname is None:
+        log_data = prepare_data(config_fname)
+    else:
+        log_data = interpret_saved_dict(log_data_fname)
+
+    path_data = log_data['config_data']['path_data']
+    path_res = log_data['config_data']['path_res']
+
+    # ----------- Prepare current log files ---------------------
+    full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
+    log_fname = f'{path_res}log-clustering-{full_date}'
+    fout = open(f"{log_fname}.txt", 'wt')
+    sys.stdout = fout
+
+    log = {
+        **log_data,
+        "config_clustering": config['config_clustering'],
+        "log_clustering": {
+            "log_fname": log_fname,
+        }}
+
+    print_log(log)
+
+    # ================ Create clustering experiments =====================
+
+    # Get the clustering models configuration from the config file
+    models_config = get_models_config(config)
+
+    # ------------------ Load datasets ------------------------
+    path_datasets = log_data['log_data']['kept_datasets']
+
+    path_exp = []
+    for d in path_datasets:
+
+        print(f" =============== DATASET {d} =============== ")
+        data, labels = load_data_labels(d)
+        clustering_true = get_clustering(labels)
+
+        data, ts_dist = is_time_series(data)
+
+        for model_name, model_config in models_config.items():
+
+            print(f" ---------------- MODEL {model_name} ---------------- ")
+            t_start_exp = time.time()
+
+            # ----------- Prepare clustering log --------------
+            log_exp_fname = f"{path_res}{model_name}/{d}-clustering.json"
+            log_exp = {
+                "dataset": d,
+                "k_true": len(np.unique(labels)),
+                "model_name": model_name,
+                "main_log_fname": log_fname,
+                "log_fname" : log_exp_fname,
+            }
+            path_exp.append(log_exp_fname)
+
+            # ----------- Generate all clusterings --------------
+            scaler = model_config['scaler'](**model_config['scaler_kw'])
+
+            clusterings = generate_all_clusterings(
+                data=data,
+                model_class=model_config['model'],
+                n_clusters_range=model_config['k_range'],
+                ts_dist=ts_dist,
+                scaler=scaler,
+                model_kw=model_config['model_kw'],
+                fit_predict_kw=model_config['fit_predict_kw'],
+                verbose=1,
+            )
+
+            # ----------- Compute VI and quality --------------
+            VIs, qualities = compute_VI_quality(clustering_true, clusterings)
+
+
+            # ----------- Finalize log and save --------------
+            log_exp["clusterings"] = clusterings
+            log_exp["VIs"] = VIs
+            log_exp["qualities"] = qualities
+
+            save_log(
+                f"{log_exp_fname}", log,
+                overwrite=True, add_date=False, new_name=True, verbose=False,
+            )
+
+            t_end_exp = time.time()
+            dt = t_end_exp - t_start_exp
+            print(f"\n\nExperiment done in: {dt:.2f}s")
+
+
+    t_end = time.time()
+    dt = t_end - t_start
+    print(f"\n\nTotal execution time: {dt:.2f}s")
+
+    # -------------------- Finalize log and save -----------------------
+    log['log_clustering']["path_exp"] = path_exp
     save_log(
         f"{log_fname}.json", log,
         overwrite=True, add_date=False, new_name=True, verbose=False,

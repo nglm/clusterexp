@@ -1,3 +1,7 @@
+"""
+Module for configuration of scripts (data, clustering, CVI)
+"""
+
 from typing import Any, Sequence, Union
 import json
 import numpy as np
@@ -213,6 +217,7 @@ CONFIG_DEFAULT_VALUES = {
     },
     "config_clustering" : {
         "VI_max" : float('inf'),
+        "k_range" : None,
         "seed" : 221,
         "lower" : {
             "model_kw" : {},

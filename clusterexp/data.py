@@ -289,3 +289,35 @@ def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
     }
 
     return filtered_datasets
+
+def is_time_series(data: np.ndarray) -> Tuple[np.ndarray, bool]:
+    """
+    Determine whether to use time series distance based on data shape.
+
+    Potentially reshape the data if it has a single time step.
+
+    Parameters
+    ----------
+    data : np.ndarray
+        The input data array.
+
+    Returns
+    -------
+    Tuple[np.ndarray, bool]
+        The potentially reshaped data and a boolean indicating whether to use time series distance: ``True`` if data of shape ``(N, T, d)`` with ``T > 1``, ``False`` otherwise.
+    """
+    # Static data (N, d)
+    if len(data.shape) == 2:
+        (N, d) = data.shape
+        ts_dist = False
+    # Time series data (N, T, d)
+    elif len(data.shape) == 3:
+        (N, T, d) = data.shape
+        if T == 1:
+            ts_dist = False
+            data = np.squeeze(data, axis=1)
+        else:
+            ts_dist = True
+    else:
+        raise ValueError(f"Unexpected data shape: {data.shape}")
+    return data, ts_dist
