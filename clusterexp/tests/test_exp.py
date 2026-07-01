@@ -1,0 +1,52 @@
+
+import numpy as np
+import pytest
+
+from clusterexp.utils import (write_json)
+
+from clusterexp.exp import (
+    prepare_data
+)
+
+config = {
+    "config_data": {
+        "path_data" : "example_data/",
+        "path_res" : "test/test_prepare_data/",
+        "max_n_samples": 1000,
+        "max_n_labels": 10,
+        "max_n_dims": 10,
+        "exclude": ["arrhythmia", "2d-4c-no"],
+        "include_only": ["artificial/"]
+    },
+    "config_CVI": {
+        "seed": 221,
+        "Hartigan": {
+            "cvi": "pycvi.cvi.Hartigan"
+        },
+        "Inertia-sum": {
+            "cvi": "pycvi.cvi.Inertia",
+            "cvi_kw": {
+                "reduction": "sum"
+        }
+        },
+        "Diameter-max": {
+            "cvi": "pycvi.cvi.Diameter",
+            "cvi_kw": {
+                "reduction": "max"
+            }
+        }
+    }
+}
+
+def test_prepare_data():
+
+    dir = "test/test_prepare_data"
+    config_fname = f"{dir}/config.json"
+    write_json(config_fname, config)
+
+    log = prepare_data(config_fname)
+
+    assert isinstance(log, dict)
+    assert "config_data" in log
+    assert "log_data" in log
+    assert log["config_data"] == config["config_data"]

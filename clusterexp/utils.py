@@ -209,6 +209,8 @@ def write_json(fname: str, data: Dict) -> None:
     data : Dict
         Dictionary to write to the JSON file.
     """
+    p = Path(fname)
+    p.parent.mkdir(parents=True, exist_ok=True)
     json_str = json.dumps(data, indent=2)
     with open(fname, 'w', encoding='utf-8') as f:
         f.write(json_str)
@@ -336,15 +338,14 @@ def save_log(
     return log_fname
 
 
-
 def print_log(
         log:dict,
     ) -> None:
     """
     Print a log dict in a readable format
     """
-    simpler_dict = simplify_dict(config)
-    print(f"\n┌─{'─'*62}─┐")
+    simpler_dict = simplify_dict(log)
+    print(f"\n┌─{'─'*70}─┐")
     print(f"{" "*3} Log file: {log['log_data']['log_fname']}")
-    print(f"\n└─{'─'*62}─┘", flush=True)
-    print(json.dumps(simpler_dict, indent=2))
+    print(json.dumps(simpler_dict, indent=2), flush=True)
+    print(f"\n└─{'─'*70}─┘", flush=True)
