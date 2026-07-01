@@ -6,7 +6,7 @@ from pathlib import Path
 
 import importlib
 
-from .utils import write_json
+from .utils import write_json, interpret_saved_dict
 
 CONFIG_DATA_BASE = {
     "config_data" : {
@@ -322,76 +322,6 @@ def make_default_config(
         write_json(filenames[2], CONFIG_CLUSTERING_TIME_SERIES_BASE)
     write_json(filenames[-1], CONFIG_CVI_BASE)
 
-def get_obj_from_string(obj_str: str) -> Any:
-    """
-    Return the object corresponding to a string representing it.
-
-    The object can be a class or a function. The string must be of the
-    form `"package.module.class"` or `"package.module.function"`.
-
-    Both the hidden and non-hidden module names are supported.
-    The hidden module name is the one that is used when importing a
-    class or function
-
-    The corresponding class or function will be imported.
-
-    If the string is not of the correct form, an ImportError will be
-    raised.
-
-    Parameters
-    ----------
-    obj_str : str
-        String representing the object to be imported.
-
-    Returns
-    -------
-    Any
-        The object corresponding to the string.
-    """
-    # rsplit(".", 1) will split once, at the very last occurence
-    module_path, obj_name = obj_str.rsplit(".", 1)
-    module = importlib.import_module(module_path)
-    return getattr(module, obj_name)
-
-def class_to_string(cls):
-    """
-    Return the string corresponding to a class.
-
-    Note that this can yield the "hidden" class of an object, with
-    hidden module names
-    """
-    return f"{cls.__module__}.{cls.__name__}"
-
-def obj_to_string(obj):
-    cls = obj.__class__
-    return f"Instance of {cls.__module__}.{cls.__name__}"
-
-def serialize(obj):
-    """
-    Serialize an object to a JSON-compatible format.
-    """
-    # To check if the object is serializable
-    try:
-        json.dumps(obj)
-        return obj
-    except (TypeError, OverflowError):
-        if isinstance(obj, Sequence):
-            res = [serialize(x) for x in obj]
-        # If we are dealing with a dict of object
-        elif isinstance(obj, dict):
-            res = {key : serialize(item) for key, item in obj.items()}
-        # If we are dealing with a dict of object
-        elif isinstance(obj, np.ndarray):
-            res = obj.tolist()
-        else:
-            # True for classes/types, False for instances
-            if inspect.isclass(obj):
-                res = class_to_string(obj)
-            elif inspect.isfunction(obj):
-                res = f"{obj.__module__}.{obj.__name__}"
-            else:
-                res = obj_to_string(obj)
-        return res
 
 def add_default(config:dict) -> dict:
     """
@@ -437,21 +367,8 @@ def add_default(config:dict) -> dict:
     return complete_dict
 
 
-def simplify_config_dict(config:dict) -> dict:
-    """
-    Translate a given dict to a jsonable dict
 
-    Classes and functions will be written as package.module.class
-    """
-    #normal_types = [Sequence, str, list, dict, int, float, bool, type(None)]
-
-    simpler_dict = {}
-    for k, v in config.items():
-        # Serialize value if necessary
-        simpler_dict[k] = serialize(v)
-    return simpler_dict
-
-def interpret_saved_dict(config:dict) -> dict:
+def interpret_saved_config(config:dict) -> dict:
     """
     Translate a given dict to a config dict, using classes and functions
 
@@ -460,22 +377,7 @@ def interpret_saved_dict(config:dict) -> dict:
     This function will also add the default values to the config.
     """
 
-    interpreted_dict = {}
-    for k, v in config.items():
-        # If the value is a string, try to interpret it as a class or function
-        if isinstance(v, str):
-            try:
-                interpreted_dict[k] = get_obj_from_string(v)
-            # If there was an error, it's probably because this was a regular
-            # string, not a string representing a class or function
-            except (ImportError, AttributeError, ValueError):
-                interpreted_dict[k] = v
-        # If the value is a dict, recursively interpret it
-        elif isinstance(v, dict):
-            interpreted_dict[k] = interpret_saved_dict(v)
-        # Else, assume that the format is correct and keep the value as is
-        else:
-            interpreted_dict[k] = v
+    interpreted_dict = interpret_saved_dict(config)
 
     # Check if we are in the top level case (this function is recursive)
     top_level_keys = {"config_data", "config_clustering", "config_CVI"}
@@ -495,7 +397,7 @@ def load_config_as_dict(config_fname: str) -> dict:
     """
     with open(config_fname, "r") as f:
         config_dict = json.load(f)
-    return interpret_saved_dict(config_dict)
+    return interpret_saved_config(config_dict)
 
 
 def get_models_config(config:dict) -> dict:

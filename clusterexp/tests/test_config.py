@@ -12,9 +12,8 @@ from ..config import (
     CONFIG_DATA_BASE, CONFIG_CLUSTERING_BASE,
     CONFIG_CLUSTERING_TIME_SERIES_BASE,
     CONFIG_CVI_BASE, CONFIG_DEFAULT_VALUES, get_models_config,
-    make_default_config, get_obj_from_string, simplify_config_dict,
-    class_to_string, obj_to_string, add_default, check_config,
-    simplify_config_dict, interpret_saved_dict, load_config_as_dict,
+    make_default_config, add_default, check_config,
+    interpret_saved_config, load_config_as_dict,
     get_mandatory_keys,
 )
 from ..utils import write_json, load_json
@@ -114,64 +113,6 @@ def test_make_default_config():
     assert os.path.isfile(f"{dir}/config-clustering-time_series.json")
     assert os.path.isfile(f"{dir}/config-CVI.json")
 
-def test_class_to_string():
-
-    # Testing with short class names
-    cls1 = StandardScaler
-    cls2 = KMeans
-    s1 = class_to_string(cls1)
-    s2 = class_to_string(cls2)
-    assert s1 == "sklearn.preprocessing._data.StandardScaler"
-    assert s2 == "sklearn.cluster._kmeans.KMeans"
-    # Testing with long class names
-    cls1 = sklearn.preprocessing.StandardScaler
-    cls2 = sklearn.cluster.KMeans
-    s1 = class_to_string(cls1)
-    s2 = class_to_string(cls2)
-    assert s1 == "sklearn.preprocessing._data.StandardScaler"
-    assert s2 == "sklearn.cluster._kmeans.KMeans"
-
-def test_get_obj_from_string():
-    # Testing with preferred module names (non-hidden)
-    s1 = "sklearn.preprocessing.StandardScaler"
-    s2 = "sklearn.cluster.KMeans"
-    obj1 = get_obj_from_string(s1)
-    obj2 = get_obj_from_string(s2)
-    assert obj1 == sklearn.preprocessing.StandardScaler
-    assert isinstance(obj1(), sklearn.preprocessing.StandardScaler)
-    assert isinstance(obj1(), StandardScaler)
-    assert obj2 == sklearn.cluster.KMeans
-    assert isinstance(obj2(), sklearn.cluster.KMeans)
-    assert isinstance(obj2(), KMeans)
-
-    # Testing with hidden module names
-    s1 = "sklearn.preprocessing._data.StandardScaler"
-    s2 = "sklearn.cluster._kmeans.KMeans"
-    obj1 = get_obj_from_string(s1)
-    obj2 = get_obj_from_string(s2)
-    assert obj1 == sklearn.preprocessing.StandardScaler
-    assert isinstance(obj1(), sklearn.preprocessing.StandardScaler)
-    assert isinstance(obj1(), StandardScaler)
-    assert obj2 == sklearn.cluster.KMeans
-    assert isinstance(obj2(), sklearn.cluster.KMeans)
-    assert isinstance(obj2(), KMeans)
-
-def test_obj_to_string():
-    # Testing with short class names
-    cls1 = StandardScaler
-    cls2 = KMeans
-    s1 = obj_to_string(cls1())
-    s2 = obj_to_string(cls2())
-    assert s1 == "Instance of sklearn.preprocessing._data.StandardScaler"
-    assert s2 == "Instance of sklearn.cluster._kmeans.KMeans"
-    # Testing with long class names
-    cls1 = sklearn.preprocessing.StandardScaler
-    cls2 = sklearn.cluster.KMeans
-    s1 = obj_to_string(cls1())
-    s2 = obj_to_string(cls2())
-    assert s1 == "Instance of sklearn.preprocessing._data.StandardScaler"
-    assert s2 == "Instance of sklearn.cluster._kmeans.KMeans"
-
 def test_add_default():
     dir = "test/test_add_default"
     make_default_config(f"{dir}")
@@ -205,18 +146,14 @@ def test_add_default():
     assert os.path.isfile(f"{dir}/config-clustering-time_series.json")
     assert os.path.isfile(f"{dir}/config-CVI.json")
 
-def test_simplify_config_dict():
-    simpler_dict = simplify_config_dict(config_1)
-    write_json("test/test_simplify_dict.json", simpler_dict)
-
-def test_interpret_saved_dict():
-    dir = "test/test_interpret_saved_dict"
+def test_interpret_saved_config():
+    dir = "test/test_interpret_saved_config"
     make_default_config(f"{dir}")
     config_clustering = load_json(f"{dir}/config-clustering.json")
     config_CVI = load_json(f"{dir}/config-CVI.json")
 
-    config_CVI_interpreted = interpret_saved_dict(config_CVI)
-    config_clustering_interpreted = interpret_saved_dict(config_clustering)
+    config_CVI_interpreted = interpret_saved_config(config_CVI)
+    config_clustering_interpreted = interpret_saved_config(config_clustering)
 
     assert check_config(config_clustering_interpreted)
     assert check_config(config_CVI_interpreted)
@@ -225,6 +162,7 @@ def test_interpret_saved_dict():
     assert config_CVI_interpreted["config_CVI"]["Hartigan"]["cvi"] == Hartigan
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == sklearn.cluster.KMeans
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == KMeans
+
 
 def test_load_config_as_dict():
     dir = "test/test_load_config_as_dict"
