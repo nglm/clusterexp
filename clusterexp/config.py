@@ -23,7 +23,6 @@ CONFIG_DATA_BASE = {
 
 CONFIG_CLUSTERING_BASE = {
     "config_clustering" : {
-        "VI_max" : 0.2,
         "seed" : 221,
         "k_range" : [1, 25],
         "KMeans" : {
@@ -72,7 +71,6 @@ CONFIG_CLUSTERING_BASE = {
 
 CONFIG_CLUSTERING_TIME_SERIES_BASE = {
     "config_clustering" : {
-        "VI_max" : 0.2,
         "seed" : 221,
         "k_range" : [1, 25],
         "KASBA" : {
@@ -154,6 +152,7 @@ CONFIG_CLUSTERING_TIME_SERIES_BASE = {
 CONFIG_CVI_BASE = {
     "config_CVI" : {
         "seed" : 221,
+        "VI_max" : 0.2,
         "Hartigan" : {
             "cvi" : "pycvi.cvi.Hartigan"
         },
@@ -216,7 +215,6 @@ CONFIG_DEFAULT_VALUES = {
         "include_only" : [],
     },
     "config_clustering" : {
-        "VI_max" : float('inf'),
         "k_range" : None,
         "seed" : 221,
         "lower" : {
@@ -228,6 +226,7 @@ CONFIG_DEFAULT_VALUES = {
     },
     "config_CVI" : {
         "seed" : 221,
+        "VI_max" : float('inf'),
         "lower" : {
             "cvi_kw" : {}
         }
@@ -254,7 +253,6 @@ def get_mandatory_keys() -> dict:
         },
         "config_clustering" : {
             "mandatory" : {
-                "VI_max": (int, float),
                 "seed": int,
                 "k_range": (list, tuple, np.ndarray),
             },
@@ -270,7 +268,8 @@ def get_mandatory_keys() -> dict:
         },
         "config_CVI" : {
             "mandatory" : {
-                "seed": int
+                "seed": int,
+                "VI_max": (int, float),
             },
             "lower" : {
                 "cvi": object,
@@ -333,13 +332,13 @@ def add_default(config:dict) -> dict:
     ``max_n_labels``, ``max_n_dims``, ``path_data``, ``path_res`` if not
     present (so none are mandatory, but they are all recommended)
 
-    For the general clustering config: Add ``VI_max``, ``seed``if not present (but not ``k_range``, which is in any case mandatory).
+    For the general clustering config: Add  ``seed``if not present (but not ``k_range``, which is in any case mandatory).
 
     For each clustering model: Add ``model_kw``, ``fit_predict_kw``,
     ``scaler``, ``scaler_kw`` if not present (but not ``model``,
     which is in any case mandatory).
 
-    For the general CVI config: Add ``seed`` if not present.
+    For the general CVI config: Add ``VI_max``, ``seed`` if not present.
 
     For each CVI model: Add ``cvi_kw`` if not present (but not ``cvi``,
     which is in any case mandatory).
@@ -396,6 +395,8 @@ def load_config_as_dict(config_fname: str) -> dict:
 
     Interpret classes and objects that are written as package.module.class,
     and then load them properly, as objects and classes, not as strings
+
+    Add default values to the config if they are not present.
     """
     with open(config_fname, "r") as f:
         config_dict = json.load(f)

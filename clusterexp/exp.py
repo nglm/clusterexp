@@ -1,3 +1,4 @@
+import os
 import sys
 from datetime import datetime
 import numpy as np
@@ -60,9 +61,9 @@ def prepare_data(config_fname:str) -> dict:
 
     filtered_datasets = filter_datasets(datasets, **constraints)
 
+    # -------------------- Finalize log and save --------------
     log['log_data'].update(filtered_datasets)
 
-    # ---------------- Save log files ------------------------
     save_log(
         f"{log_fname}.json", log,
         overwrite=True, add_date=False, new_name=True, verbose=False,
@@ -135,6 +136,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
     # Get the clustering models configuration from the config file
     models_config = get_models_config(config)
+    k_range = range(*config["config_clustering"]["k_range"])
 
     # ------------------ Load datasets ------------------------
     path_datasets = log_data['log_data']['kept_datasets']
@@ -148,13 +150,14 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
         data, ts_dist = is_time_series(data)
 
-        for model_name, model_config in models_config.items():
+        for model_name, model_config in models_config["config_clustering"].items():
 
             print(f" ---------------- MODEL {model_name} ---------------- ")
             t_start_exp = time.time()
 
             # ----------- Prepare clustering log --------------
-            log_exp_fname = f"{path_res}{model_name}/{d}-clustering.json"
+            d_shortname = d.replace(path_data, "")
+            log_exp_fname = f"{path_res}{model_name}/{d_shortname}-clustering.json"
             log_exp = {
                 "dataset": d,
                 "k_true": len(np.unique(labels)),
@@ -165,12 +168,15 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             path_exp.append(log_exp_fname)
 
             # ----------- Generate all clusterings --------------
-            scaler = model_config['scaler'](**model_config['scaler_kw'])
+            if model_config['scaler'] is None:
+                scaler = None
+            else:
+                scaler = model_config['scaler'](**model_config['scaler_kw'])
 
             clusterings = generate_all_clusterings(
                 data=data,
                 model_class=model_config['model'],
-                n_clusters_range=model_config['k_range'],
+                n_clusters_range=k_range,
                 ts_dist=ts_dist,
                 scaler=scaler,
                 model_kw=model_config['model_kw'],
@@ -188,7 +194,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             log_exp["qualities"] = qualities
 
             save_log(
-                f"{log_exp_fname}", log,
+                f"{log_exp_fname}", log_exp,
                 overwrite=True, add_date=False, new_name=True, verbose=False,
             )
 

@@ -5,10 +5,11 @@ import pytest
 from clusterexp.utils import (write_json)
 
 from clusterexp.exp import (
+    create_clusterings,
     prepare_data
 )
 
-config = {
+config1 = {
     "config_data": {
         "path_data" : "example_data/",
         "path_res" : "test/test_prepare_data/",
@@ -35,6 +36,36 @@ config = {
                 "reduction": "max"
             }
         }
+    },
+    "config_clustering" : {
+        "seed" : 221,
+        "k_range" : [1, 25],
+        "KMeans" : {
+            "model" : "sklearn.cluster.KMeans",
+            "model_kw" : {},
+            "fit_predict_kw" : {},
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
+        },
+        "Agglomerative-Single" : {
+            "model": "sklearn.cluster.AgglomerativeClustering",
+            "model_kw": {
+                "linkage": "single",
+                "metric": "euclidean"
+            },
+            "fit_predict_kw": {},
+            "scaler_kw": {}
+        },
+        "Agglomerative-Ward" : {
+            "model": "sklearn.cluster.AgglomerativeClustering",
+            "model_kw": {
+                "linkage": "ward",
+                "metric": "euclidean"
+            },
+            "fit_predict_kw": {},
+            "scaler": None,
+            "scaler_kw": {}
+        },
     }
 }
 
@@ -42,11 +73,28 @@ def test_prepare_data():
 
     dir = "test/test_prepare_data"
     config_fname = f"{dir}/config.json"
-    write_json(config_fname, config)
+    write_json(config_fname, config1)
 
     log = prepare_data(config_fname)
 
     assert isinstance(log, dict)
     assert "config_data" in log
     assert "log_data" in log
-    assert log["config_data"] == config["config_data"]
+    assert log["config_data"] == config1["config_data"]
+
+def test_create_clusterings():
+
+    dir = "test/test_create_clusterings"
+    config_fname = f"{dir}/config.json"
+    config2 = config1.copy()
+    config2["config_data"]["path_res"] = f"{dir}/"
+    write_json(config_fname, config2)
+
+    log = create_clusterings(config_fname)
+
+    assert isinstance(log, dict)
+    assert "config_data" in log
+    assert "log_data" in log
+    assert "log_clustering" in log
+    assert "config_clustering" in log
+    assert log["config_data"] == config2["config_data"]

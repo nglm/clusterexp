@@ -1,6 +1,5 @@
 {
     "config_clustering": {
-        "VI_max": 0.2,
         "seed": 221,
         "k_range": [1, 25],
         "KASBA": {

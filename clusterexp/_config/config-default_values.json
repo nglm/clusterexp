@@ -9,10 +9,10 @@
         "include_only": []
     },
     "config_clustering": {
-        "VI_max": null,
         "seed": 221
     },
     "config-CVI": {
-        "seed": 221
+        "seed": 221,
+        "VI_max": null
     }
 }

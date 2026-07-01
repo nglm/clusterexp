@@ -37,6 +37,7 @@ config_1 = {
 config_cvi = {
   "config_CVI": {
     "seed": 221,
+    "VI_max": 0.2,
     "Hartigan": {
       "cvi": "pycvi.cvi.Hartigan"
     },
@@ -57,7 +58,6 @@ config_cvi = {
 
 config_clustering = {
   "config_clustering": {
-    "VI_max": 0.2,
     "seed": 221,
     "k_range": [
       1,

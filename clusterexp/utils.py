@@ -329,8 +329,10 @@ def save_log(
 
         log_dict["log_filename"] = log_fname
 
+        log_dict_serializable = simplify_dict(log_dict)
+
         with open(log_fname, 'w') as f_log:
-            json.dump(log_dict, f_log, indent=2)
+            json.dump(log_dict_serializable, f_log, indent=2)
 
         if int(verbose) > 0:
             print(f"Saved log file to {log_fname}.")
