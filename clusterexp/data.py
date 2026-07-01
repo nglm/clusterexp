@@ -162,7 +162,16 @@ def find_datasets(path_data:str) -> List[str]:
     - finds files that ends with `_data.csv` and `_labels.csv`
     - extract the dataset name from the data file
     - make sure that you do have both files
-    - returns a list of dataset names as ``[full/path/to/DATASET]`` without the `_data.csv` and `_labels.csv`. Originally I wanted to have a dictionnary with a shortname for the dataset (excluding the root of the path to the dataset but there could be issues if a given dataset has the same filename in several subfolders)
+    - returns a list of dataset names as ``[full/path/to/DATASET]``
+      without the `_data.csv` and `_labels.csv`. Originally I wanted to
+      have a dictionnary with a shortname for the dataset (excluding the
+      root of the path to the dataset but there could be issues if a
+      given dataset has the same filename in several subfolders)
+
+    This function assumes that the data is already formatted as
+    expected with:
+    - a file for the data and a file for the labels,
+
 
     Parameters
     ----------
