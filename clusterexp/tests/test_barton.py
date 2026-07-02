@@ -4,7 +4,7 @@ import pytest
 
 from clusterexp.barton import (
     get_list_datasets_from_github, get_data_labels, arff_from_github,
-    load_data_from_github, process_labels,
+    load_data_from_github,
     save_data_labels_from_github, URL_ROOT
 )
 
@@ -40,16 +40,6 @@ def test_load_data_from_github():
     assert isinstance(data, np.ndarray)
     assert isinstance(labels, np.ndarray)
     assert len(data) == len(labels)
-
-def test_process_labels():
-    fname = "artificial/long3.arff"
-    data, labels, meta = load_data_from_github(
-        f"{URL_ROOT}{fname}", with_labels=True
-    )
-
-    processed_labels, n_labels = process_labels(labels)
-    assert isinstance(processed_labels, np.ndarray)
-    assert n_labels == 2
 
 def test_get_data_labels():
 

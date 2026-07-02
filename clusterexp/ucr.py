@@ -6,6 +6,8 @@ from scipy.io import arff
 
 from typing import List, Dict, Tuple, Union
 
+from .utils import process_labels
+
 HOME_DIR = os.path.expanduser('~')
 PATH_UCR_LOCAL = f"{HOME_DIR}/Documents/Work/Data/UCR/UCRArchive_2018/"
 PATH_UCR_REMOTE = f"{HOME_DIR}/UCR/UCRArchive_2018/"
@@ -39,24 +41,20 @@ TOO_MANY_SAMPLES = [
 
 def get_data_labels_UCR(
     fname: str,
-    path: str ="./"
-) -> Tuple[np.ndarray, Union[None, np.ndarray], int, arff.MetaData]:
+) -> Tuple[np.ndarray, Union[None, np.ndarray], int]:
     """
-    Get dataset, labels number of labels, and metadata for UCR data
+    Get dataset, labels number of labels for UCR data
 
     Parameters
     ----------
     fname : str
         Path to the UCR TSV file.
-    path : str, optional
-        Unused. Kept for API consistency with other loaders,
-        by default "./".
 
     Returns
     -------
     Tuple[np.ndarray, Union[None, np.ndarray], int, None]
         Time-series data reshaped as ``(N, T, 1)``, encoded labels,
-        number of labels, and ``None`` metadata.
+        number of labels.
     """
 
     df = pd.read_csv(fname, sep="\t")
@@ -66,4 +64,4 @@ def get_data_labels_UCR(
     labels = df.iloc[:, 0].to_numpy()
     labels, n_labels = process_labels(labels)
 
-    return data, labels, n_labels, None
+    return data, labels

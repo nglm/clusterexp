@@ -2,15 +2,19 @@ import sklearn
 from sklearn.preprocessing import StandardScaler
 from sklearn.cluster import KMeans
 import numpy
+import numpy as np
 import os
 import pytest
 
 import pycvi
 from pycvi.cvi import Hartigan
 
+from ..barton import load_data_from_github, URL_ROOT
+
 from ..utils import (
     class_to_string, get_obj_from_string, obj_to_string, write_json,
-    simplify_dict, interpret_saved_dict, load_json, extract_log_from_text
+    simplify_dict, interpret_saved_dict, load_json, extract_log_from_text,
+    process_labels
 )
 from ..config import (
     make_default_config
@@ -168,3 +172,13 @@ def test_interpret_saved_dict():
     assert config_CVI_interpreted["config_CVI"]["Hartigan"]["cvi"] == Hartigan
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == sklearn.cluster.KMeans
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == KMeans
+
+def test_process_labels():
+    fname = "artificial/long3.arff"
+    data, labels, meta = load_data_from_github(
+        f"{URL_ROOT}{fname}", with_labels=True
+    )
+
+    processed_labels, n_labels = process_labels(labels)
+    assert isinstance(processed_labels, np.ndarray)
+    assert n_labels == 2
