@@ -2,7 +2,7 @@
 import numpy as np
 import pytest
 
-from clusterexp.utils import (write_json)
+from clusterexp.utils import (write_json, extract_log_from_text)
 
 from clusterexp.exp import (
     create_clusterings,
@@ -82,6 +82,13 @@ def test_prepare_data():
     assert "log_data" in log
     assert log["config_data"] == config1["config_data"]
 
+    # Make sure that the text log file contain 2 logs and that the last log corresponds to the log dictionary
+    l_log_extracted = extract_log_from_text(f"{log['log_data']['log_fname']}.txt")
+
+    assert isinstance(l_log_extracted, list)
+    assert len(l_log_extracted) == 2
+    assert l_log_extracted[-1] == log
+
 def test_create_clusterings():
 
     dir = "test/test_create_clusterings"
@@ -98,3 +105,10 @@ def test_create_clusterings():
     assert "log_clustering" in log
     assert "config_clustering" in log
     assert log["config_data"] == config2["config_data"]
+
+    # Make sure that the text log file contain 2 logs and that the last log corresponds to the log dictionary
+    l_log_extracted = extract_log_from_text(f"{log['log_clustering']['log_fname']}.txt")
+
+    assert isinstance(l_log_extracted, list)
+    assert len(l_log_extracted) == 2
+    assert l_log_extracted[-1] == log

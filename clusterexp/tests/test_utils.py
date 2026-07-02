@@ -10,7 +10,7 @@ from pycvi.cvi import Hartigan
 
 from ..utils import (
     class_to_string, get_obj_from_string, obj_to_string, write_json,
-    simplify_dict, interpret_saved_dict, load_json
+    simplify_dict, interpret_saved_dict, load_json, extract_log_from_text
 )
 from ..config import (
     make_default_config

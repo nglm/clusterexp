@@ -349,5 +349,39 @@ def print_log(
     simpler_dict = simplify_dict(log)
     print(f"\n┌─{'─'*70}─┐")
     print(f"{" "*3} Log file: {log['log_data']['log_fname']}")
+    print(f"START LOG")
     print(json.dumps(simpler_dict, indent=2), flush=True)
+    print(f"END LOG")
     print(f"\n└─{'─'*70}─┘", flush=True)
+
+def extract_log_from_text(fname) -> list[dict]:
+    """
+    Extract log dicts from a log text file.
+
+    The text file should contain a JSON string representing the log dict,
+    starting with a line containing "START LOG" and ending with a line
+    containing "END LOG".
+
+    There could be several logs in the same text file, each one starting with "START LOG" and ending with "END LOG", but logically, there should be only 2 logs per text file, the one at the very beginning and the one at the very end, with some other text in between.
+
+    Parameters
+    ----------
+    fname : str
+        Path to the log text file.
+
+    Returns
+    -------
+    l_logs : list[dict]
+        A list of log dicts extracted from the text file.
+    """
+    with open(fname, 'r') as f:
+        lines = f.readlines()
+    l_i_start = [i for i, line in enumerate(lines) if line == "START LOG\n"]
+    l_i_end = [i for i, line in enumerate(lines) if line == "END LOG\n"]
+    l_logs = []
+    for i_start, i_end in zip(l_i_start, l_i_end):
+        json_lines = [l for l in lines[i_start + 1:i_end]]
+        json_str = "".join(json_lines)
+        json_dict = json.loads(json_str)
+        l_logs.append(interpret_saved_dict(json_dict))
+    return l_logs
