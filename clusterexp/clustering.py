@@ -65,7 +65,6 @@ def compute_VI_quality(true_clusters, clusterings: dict) -> Tuple[dict, dict]:
 def decompose_exp_fnames(
         exp_fnames: List[str],
         path_res: str,
-        path_data: str
     ) -> List[Tuple[str, str]]:
     """
     From a list of experiment filenames to clustering methods and datasets.
@@ -76,10 +75,14 @@ def decompose_exp_fnames(
 
     and we assume that the clustering_name doesn't contain any `/` character.
 
+    Note that path_data doesn't appear in the experiment filenames, only the path to the dataset relative to path_data.
+
     Parameters
     ----------
     exp_fnames : list
         A list of experiment filenames.
+    path_res : str
+        The path to the results directory.
 
     Returns
     -------
