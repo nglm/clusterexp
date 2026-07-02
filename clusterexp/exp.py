@@ -49,6 +49,7 @@ def prepare_data(config_fname:str) -> dict:
             "log_fname": log_fname,
         }}
 
+    # Make the log visible in the output file
     print_log(log)
 
     # ---------------- Find datasets ------------------------
@@ -69,6 +70,7 @@ def prepare_data(config_fname:str) -> dict:
         overwrite=True, add_date=False, new_name=True, verbose=False,
     )
 
+    # Make the log visible in the output file
     print_log(log)
 
     fout.close()
@@ -130,6 +132,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             "log_fname": log_fname,
         }}
 
+    # Make the log visible in the output file
     print_log(log)
 
     # ================ Create clustering experiments =====================
@@ -156,6 +159,9 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             t_start_exp = time.time()
 
             # ----------- Prepare clustering log --------------
+
+            # We don't use the full path to the dataset only the path relative
+            # to path_data
             d_shortname = d.replace(path_data, "")
             log_exp_fname = f"{path_res}{model_name}/{d_shortname}-clustering.json"
             log_exp = {
@@ -164,15 +170,21 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
                 "model_name": model_name,
                 "main_log_fname": log_fname,
                 "log_fname" : log_exp_fname,
+                "ts_dist": ts_dist,
+                model_name: model_config,  # Add the config of this model
             }
+            # Add current experiment log filename to the main log file
             path_exp.append(log_exp_fname)
 
             # ----------- Generate all clusterings --------------
+
+            # Instanciate a scaler if one was provided in the config file
             if model_config['scaler'] is None:
                 scaler = None
             else:
                 scaler = model_config['scaler'](**model_config['scaler_kw'])
 
+            # Generate all clusterings for the current dataset and model
             clusterings = generate_all_clusterings(
                 data=data,
                 model_class=model_config['model'],
@@ -213,7 +225,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
         f"{log_fname}.json", log,
         overwrite=True, add_date=False, new_name=True, verbose=False,
     )
-
+    # Make the log visible in the output file
     print_log(log)
 
     fout.close()
