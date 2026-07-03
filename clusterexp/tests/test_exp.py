@@ -66,6 +66,15 @@ config1 = {
             "scaler": None,
             "scaler_kw": {}
         },
+        "KMedoids" : {
+            "model": "kmedoids.KMedoids",
+            "model_kw": {
+                "metric": "euclidean",
+            },
+            "fit_predict_kw": {},
+            "scaler": "sklearn.preprocessing.StandardScaler",
+            "scaler_kw": {}
+        },
     }
 }
 
