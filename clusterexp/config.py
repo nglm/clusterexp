@@ -61,7 +61,7 @@ CONFIG_CLUSTERING_BASE = {
         },
         "KMedoids" : {
             "model": "kmedoids.KMedoids",
-            "model_kw": {},
+            "model_kw": {"metric": "euclidean"},
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
@@ -152,7 +152,10 @@ CONFIG_CLUSTERING_TIME_SERIES_BASE = {
 CONFIG_CVI_BASE = {
     "config_CVI" : {
         "seed" : 221,
-        "VI_max" : 0.2,
+        "quality_true_min" : 0.6,
+        "quality_best_min" : 0.6,
+        "best_q_true_only" : False,
+        "best_q_best_only" : False,
         "Hartigan" : {
             "cvi" : "pycvi.cvi.Hartigan"
         },
@@ -226,7 +229,8 @@ CONFIG_DEFAULT_VALUES = {
     },
     "config_CVI" : {
         "seed" : 221,
-        "VI_max" : float('inf'),
+        "quality_true_min" : 0.0,
+        "quality_best_min" : 0.0,
         "lower" : {
             "cvi_kw" : {}
         }
@@ -269,7 +273,10 @@ def get_mandatory_keys() -> dict:
         "config_CVI" : {
             "mandatory" : {
                 "seed": int,
-                "VI_max": (int, float),
+                "quality_true_min": (int, float),
+                "quality_best_min": (int, float),
+                "best_q_true_only": bool,
+                "best_q_best_only": bool,
             },
             "lower" : {
                 "cvi": object,
@@ -338,7 +345,7 @@ def add_default(config:dict) -> dict:
     ``scaler``, ``scaler_kw`` if not present (but not ``model``,
     which is in any case mandatory).
 
-    For the general CVI config: Add ``VI_max``, ``seed`` if not present.
+    For the general CVI config: Add ``quality_true_min``, ``quality_best_min``, ``seed``, ``best_q_true_only``, ``best_q_best_only`` if not present.
 
     For each CVI model: Add ``cvi_kw`` if not present (but not ``cvi``,
     which is in any case mandatory).
@@ -373,9 +380,13 @@ def interpret_saved_config(config:dict) -> dict:
     """
     Translate a given dict to a config dict, using classes and functions
 
-    Make sure that classes and functions are written as package.module.class
+    Make sure that classes and functions are written as
+    package.module.class
 
     This function will also add the default values to the config.
+
+    For a function that works for dict in general that are not config,
+    see `interpret_saved_dict` .
     """
 
     interpreted_dict = interpret_saved_dict(config)

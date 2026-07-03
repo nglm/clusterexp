@@ -18,7 +18,8 @@ from ..config import (
 )
 
 config_1 = {
-    "VI_max": 0.2,
+    "quality_true_min": 0.6,
+    "quality_best_min": 0.6,
     "seed": 221,
     "k_range": [1, 25],
     "KMeans": {
@@ -56,7 +57,6 @@ config_cvi = {
 
 config_clustering = {
   "config_clustering": {
-    "VI_max": 0.2,
     "seed": 221,
     "k_range": [
       1,

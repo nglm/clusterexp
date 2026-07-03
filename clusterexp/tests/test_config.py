@@ -19,7 +19,8 @@ from ..config import (
 from ..utils import write_json, load_json
 
 config_1 = {
-    "VI_max": 0.2,
+    "quality_true_min": 0.6,
+    "quality_best_min": 0.6,
     "seed": 221,
     "k_range": [1, 25],
     "KMeans": {
@@ -37,7 +38,8 @@ config_1 = {
 config_cvi = {
   "config_CVI": {
     "seed": 221,
-    "VI_max": 0.2,
+    "quality_true_min": 0.6,
+    "quality_best_min": 0.6,
     "Hartigan": {
       "cvi": "pycvi.cvi.Hartigan"
     },
