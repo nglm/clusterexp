@@ -159,18 +159,18 @@ def find_datasets(path_data:str) -> List[str]:
     Find datasets in a given folder.
 
     - recursively go through the given folder
-    - finds files that ends with `_data.csv` and `_labels.csv`
-    - extract the dataset name from the data file
-    - make sure that you do have both files
+    - finds files that ends with `_data.csv` and `_labels.csv` or `_data.tsv` and `_labels.tsv` or `_data.npy` and `_labels.npy`
+    - make sure that you do have both data and label files
     - returns a list of dataset names as ``[full/path/to/DATASET]``
-      without the `_data.csv` and `_labels.csv`. Originally I wanted to
+      with the `_data.ext` but not the `_labels.ext` which is then easy to infer anyway. Originally I wanted to
       have a dictionnary with a shortname for the dataset (excluding the
       root of the path to the dataset but there could be issues if a
       given dataset has the same filename in several subfolders)
 
     This function assumes that the data is already formatted as
     expected with:
-    - a file for the data and a file for the labels,
+    - a file for the data and a file for the labels
+    - they share the same extension (csv, tsv, or npy)
 
 
     Parameters
@@ -184,41 +184,65 @@ def find_datasets(path_data:str) -> List[str]:
         List of dataset names found in the folder.
     """
     datasets = []
+    extensions = [".csv", ".tsv", ".npy"]
     for root, dirs, files in os.walk(path_data):
-        data_files = [f for f in files if f.endswith("_data.csv")]
-        label_files = [f for f in files if f.endswith("_labels.csv")]
+        # Convert to Path objects for easier handling
+        files = [Path(f) for f in files]
 
-        # Extract dataset names from data files
-        data_names = {f.split('_data.csv')[0] for f in data_files}
-        label_names = {f.split('_labels.csv')[0] for f in label_files}
+        # Find data and label files based on naming conventions
+        data_files = [
+            f for f in files
+            if f.stem.endswith("_data") and f.suffix in extensions
+        ]
+        label_fnames = [
+            f.name for f in files
+            if f.stem.endswith("_labels") and f.suffix in extensions
+        ]
 
-        # Find common dataset names that have both data and labels
-        common_names = data_names.intersection(label_names)
+        # Keep only data files that have a corresponding label file
+        # We could directly replace _data without the extension but it's a bit
+        # less safe, in case the pattern "_data" appears somewhere else
+        kept_data_fnames = [
+            f.name for f in data_files
+            if f.name.replace(f"_data{f.suffix}", f"_labels{f.suffix}") in label_fnames
+        ]
 
-        # Add full paths to the datasets list
-        for name in common_names:
-            datasets.append(os.path.join(root, name))
+        # Add full paths to the resulting list
+        for f in kept_data_fnames:
+            datasets.append(os.path.join(root, f))
 
     return datasets
 
 def load_data_labels(
-    fname_root: str,
+    fname_data: str,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Load data and labels from CSV files.
 
     Parameters
     ----------
-    fname_root : str
-        Root filename (without `_data.csv` or `_labels.csv` suffix).
+    fname_data : str
+        Path to the data file.
 
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
         Data array and labels array.
     """
-    data = pd.read_csv(f"{fname_root}_data.csv", header=None).to_numpy()
-    labels = pd.read_csv(f"{fname_root}_labels.csv", header=None).to_numpy()
+    # We could directly replace _data without the extension but it's a bit less
+    # safe, in case the pattern "_data" appears somewhere else in the path
+    ext = Path(fname_data).suffix
+    fname_labels = fname_data.replace(f"_data{ext}", f"_labels{ext}")
+
+    if ext in [".npy", "npy"]:
+        data = np.load(fname_data)
+        labels = np.load(fname_labels)
+    elif ext in [".csv", "csv", ".tsv", "tsv"]:
+        ext = ext.lstrip(".")
+        data = pd.read_csv(fname_data, header=None).to_numpy()
+        labels = pd.read_csv(fname_labels, header=None).to_numpy()
+    else:
+        raise ValueError(f"Unsupported extension: {ext}. Use 'csv', 'tsv' or 'npy'.")
     return data, labels
 
 def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
@@ -321,3 +345,34 @@ def is_time_series(data: np.ndarray) -> Tuple[np.ndarray, bool]:
     else:
         raise ValueError(f"Unexpected data shape: {data.shape}")
     return data, ts_dist
+
+def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
+    """
+    Encode labels and infer the effective count.
+
+    Parameters
+    ----------
+    labels : np.ndarray
+        Original label values.
+
+    Returns
+    -------
+    Tuple[np.ndarray, int]
+        Encoded labels and the number of effective classes. If each
+        sample has a unique label, labels are collapsed to one class.
+    """
+    N = len(labels)
+    # Find unique classes and map them to integers
+    labels = labels.flatten()
+    classes = np.unique(labels)
+    map_classes = {c:i for i,c in enumerate(classes)}
+    n_labels = len(classes)
+
+    if n_labels == N:
+        n_labels = 1
+        new_labels = np.zeros_like(labels, dtype=int)
+    else:
+        new_labels = np.array(
+            [map_classes[label] for label in labels],
+            dtype=int)
+    return new_labels, n_labels

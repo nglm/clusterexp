@@ -8,7 +8,7 @@ import os
 
 from typing import List, Dict, Tuple, Union
 
-from .utils import process_labels
+from .data import process_labels
 
 URL_ROOT = 'https://raw.githubusercontent.com/nglm/clustering-benchmark/master/src/main/resources/datasets/'
 
@@ -235,8 +235,10 @@ def save_data_labels_from_github(
         )
         # labels = labels.astype(float)
         pd.DataFrame(labels).to_csv(
-            f"{path_data}{d}_labels.csv", header=False, index=False,
+            f"{path_data}{d}_labels.csv".replace(".arff", ""),
+            header=False, index=False,
         )
         pd.DataFrame(data).to_csv(
-            f"{path_data}{d}_data.csv", header=False, index=False,
+            f"{path_data}{d}_data.csv".replace(".arff", ""),
+            header=False, index=False,
         )

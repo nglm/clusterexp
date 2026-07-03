@@ -2,8 +2,10 @@
 import numpy as np
 import pytest
 
+from ..barton import load_data_from_github, URL_ROOT
+
 from clusterexp.data import (
-    find_datasets, load_data_labels, filter_datasets
+    find_datasets, load_data_labels, filter_datasets, process_labels
 )
 
 path_data = "./example_data/"
@@ -83,3 +85,14 @@ def test_filter_datasets():
         "exclude": [],
         "include_only": [],
     }
+
+
+def test_process_labels():
+    fname = "artificial/long3.arff"
+    data, labels, meta = load_data_from_github(
+        f"{URL_ROOT}{fname}", with_labels=True
+    )
+
+    processed_labels, n_labels = process_labels(labels)
+    assert isinstance(processed_labels, np.ndarray)
+    assert n_labels == 2

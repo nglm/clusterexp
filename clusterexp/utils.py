@@ -387,33 +387,3 @@ def extract_log_from_text(fname) -> list[dict]:
     return l_logs
 
 
-def process_labels(labels: np.ndarray) -> Tuple[np.ndarray, int]:
-    """
-    Encode labels and infer the effective count.
-
-    Parameters
-    ----------
-    labels : np.ndarray
-        Original label values.
-
-    Returns
-    -------
-    Tuple[np.ndarray, int]
-        Encoded labels and the number of effective classes. If each
-        sample has a unique label, labels are collapsed to one class.
-    """
-    N = len(labels)
-    # Find unique classes and map them to integers
-    labels = labels.flatten()
-    classes = np.unique(labels)
-    map_classes = {c:i for i,c in enumerate(classes)}
-    n_labels = len(classes)
-
-    if n_labels == N:
-        n_labels = 1
-        new_labels = np.zeros_like(labels, dtype=int)
-    else:
-        new_labels = np.array(
-            [map_classes[label] for label in labels],
-            dtype=int)
-    return new_labels, n_labels
