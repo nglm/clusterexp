@@ -146,14 +146,22 @@ def simplify_dict(config:dict) -> dict:
         simpler_dict[k] = serialize(v)
     return simpler_dict
 
-def interpret_saved_dict(config:dict) -> dict:
+def interpret_saved_dict(config:Union[dict, str]) -> dict:
     """
     Translate a given dict to a config dict, using classes and functions
 
-    Make sure that classes and functions are written as package.module.class
+    Make sure that classes and functions are written as
+    package.module.class
 
-    This function will also add the default values to the config.
+    This function works for dict that are not config (and will not
+    complement with default values). For a function specially designed
+    for config dict, see `interpret_saved_config` (which will complement
+    with default values).
     """
+    if isinstance(config, str):
+        if not config.endswith(".json"):
+            config += ".json"
+        config = load_json(config)
 
     interpreted_dict = {}
     for k, v in config.items():
