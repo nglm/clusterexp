@@ -8,7 +8,7 @@ from clusterexp.barton import (
 )
 from clusterexp.data import write_list_datasets
 
-PATH_DATA = f"{home_dir}/Documents/Syncthing/Data/ClusterExp-restart2026/"
+PATH_DATA = f"{home_dir}/Documents/Syncthing/Data/ClusterExp-restart2026/Barton/"
 
 data_sources = ["artificial", "real-world"]
 
