@@ -38,7 +38,7 @@ def test_decompose_exp_fnames():
         "res/Agglomerative-Single/artificial/2d-4c-no-CVI.json",
         "res/Agglomerative-Ward/artificial/2d-4c-no-CVI.json"
     ]
-    path_res = "res/"
+
     expected_output = [
         ("KMeans", "artificial/2d-4c-no"),
         ("Agglomerative-Single", "artificial/2d-4c-no"),
@@ -47,5 +47,5 @@ def test_decompose_exp_fnames():
         ("Agglomerative-Single", "artificial/2d-4c-no"),
         ("Agglomerative-Ward", "artificial/2d-4c-no")
     ]
-    output = decompose_exp_fnames(exp_fnames, path_res)
+    output = decompose_exp_fnames(exp_fnames)
     assert output == expected_output

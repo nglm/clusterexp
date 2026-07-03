@@ -8,7 +8,7 @@ from pycvi.cluster import get_clustering, generate_all_clusterings
 from .config import load_config_as_dict, get_models_config
 from .data import find_datasets, filter_datasets, load_data_labels, is_time_series
 from .utils import save_log, print_log, interpret_saved_dict
-from .clustering import compute_VI_quality
+from .clustering import compute_VI_quality, filter_experiments
 
 from typing import Union
 
@@ -201,26 +201,131 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
 
             # ----------- Finalize log and save --------------
+            t_end_exp = time.time()
+            dt = float(f"{t_end_exp - t_start_exp:.2f}")
+            print(f"\n\nExperiment done in: {dt:.2f}s")
+
+
             log_exp["clusterings"] = clusterings
             log_exp["VIs"] = VIs
             log_exp["qualities"] = qualities
+            log_exp["time"] = dt
 
             save_log(
                 f"{log_exp_fname}", log_exp,
                 overwrite=True, add_date=False, new_name=True, verbose=False,
             )
 
-            t_end_exp = time.time()
-            dt = t_end_exp - t_start_exp
-            print(f"\n\nExperiment done in: {dt:.2f}s")
-
-
+    # -------------------- Finalize log and save -----------------------
     t_end = time.time()
-    dt = t_end - t_start
+    dt = float(f"{t_end - t_start:.2f}")
     print(f"\n\nTotal execution time: {dt:.2f}s")
 
-    # -------------------- Finalize log and save -----------------------
     log['log_clustering']["path_exp"] = path_exp
+    log['log_clustering']["time"] = dt
+    save_log(
+        f"{log_fname}.json", log,
+        overwrite=True, add_date=False, new_name=True, verbose=False,
+    )
+    # Make the log visible in the output file
+    print_log(log)
+
+    fout.close()
+    return log
+
+def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] = None) -> dict:
+    """
+    Create CVI files for each non-filtered experiment in the log file
+
+    - Relying on `log-clustering-20XX-XX-XX.json`.
+    - Creates a text logfile `log-CVI-20XX-XX-XX.txt`. Fully reads `config-data.json` and `config-clustering.json`, `config-CVI.json` at the very beginning of the logfile.
+    - Creates a json logfile `log-CVI-20XX-XX-XX.json` concatenating the config files used and giving some info about the general results
+    - One key `config_data` with the corresponding dict
+    - One key `log_data` with the corresponding dict
+    - One key `config_clustering` with the corresponding dict
+    - One key `log_clustering` with the corresponding dict
+    - One key `config_CVI` with the provided config
+    - One key `log_CVI` with the following keys:
+        - `path_CVI` = list of all CVI json files created `[path/to/res/clustering_name/path/to/dataset-CVI.json]`
+        - One key `kept_experiments` a list `"path/to/experiment/dataset-clustering.json"`, see `filter_experiments` function
+        - One key `dropped_experiments` a dict `contraint : "path/to/experiment/dataset-clustering.json"`, see `filter_experiments` function
+        - One key `kept_datasets` a list `[path/to/dataset]` for which at least one clustering method was kept
+        - One key `dropped_datasets` a list `[path/to/dataset]` for which no clustering method was kept
+        - `log_fname` : `path/to/res/log-CVI-20XX-XX-XX` (without the `.txt` or `.json`)
+        - `time`
+    - Filter experiments based on the contraints defined in `config_CVI` (see `filter_experiments` function)
+    - Compute the values for each kept experiment and each provided CVI
+    - Creates a `path_res/clustering_method/dataset-CVI.json` file for each kept experiment
+    - `dataset`
+    - `model_name`
+    - `k_true`
+    - `main_log_fname` (CVI)
+    - `log_filename` (-CVI)
+    - `log_experiment`
+        - `main_log_fname` (clustering)
+        - `log_fname` (-clustering)
+        - model_name (model config)
+        - `ts_dist`
+    - `CVI_names`
+    - CVI_name
+        - `CVI_values`
+        - `k_selected`
+        - `time`
+
+    """
+    # ------------- Read config file and previous log ------------------
+    t_start = time.time()
+
+    config = load_config_as_dict(config_fname)
+    if "config_CVI" not in config:
+        raise ValueError("The config file must contain a 'config_CVI' key.")
+
+    if log_clustering_fname is None:
+        log_clustering = create_clusterings(config_fname)
+    else:
+        log_clustering = interpret_saved_dict(log_clustering_fname)
+
+    path_data = log_clustering['config_data']['path_data']
+    path_res = log_clustering['config_data']['path_res']
+
+    # ----------- Prepare current log files ---------------------
+    full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
+    log_fname = f'{path_res}log-CVI-{full_date}'
+    fout = open(f"{log_fname}.txt", 'wt')
+    sys.stdout = fout
+
+    log = {
+        **log_clustering,
+        "config_CVI": config['config_CVI'],
+        "log_CVI": {
+            "log_fname": log_fname,
+        }}
+
+    # Make the log visible in the output file
+    print_log(log)
+
+    # ================ Find experiments ===================
+    all_experiments = log_clustering['log_clustering']['path_exp']
+
+    # ================ Filter experiments ===================
+    constraints = config['config_CVI'].copy()
+    constraints.pop('path_data', None)
+    constraints.pop('path_res', None)
+
+    filtered_exp, filtered_datasets = filter_experiments(all_experiments)
+
+    # ================ Create CVI files =====================
+    path_CVI_files = []
+
+
+
+    # -------------------- Finalize log and save -----------------------
+    t_end = time.time()
+    dt = float(f"{t_end - t_start:.2f}")
+    print(f"\n\nTotal execution time: {dt:.2f}s")
+
+    log['log_CVI']["path_CVI_files"] = path_CVI_files
+    log['log_CVI']["time"] = dt
     save_log(
         f"{log_fname}.json", log,
         overwrite=True, add_date=False, new_name=True, verbose=False,
