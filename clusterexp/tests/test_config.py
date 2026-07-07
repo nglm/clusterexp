@@ -13,7 +13,7 @@ from ..config import (
     CONFIG_CLUSTERING_TIME_SERIES_BASE,
     CONFIG_CVI_BASE, CONFIG_DEFAULT_VALUES, get_models_config,
     make_default_config, add_default, check_config,
-    interpret_saved_config, load_config_as_dict,
+    interpret_config, interpret_config,
     get_mandatory_keys,
 )
 from ..utils import write_json, load_json
@@ -148,14 +148,14 @@ def test_add_default():
     assert os.path.isfile(f"{dir}/config-clustering-time_series.json")
     assert os.path.isfile(f"{dir}/config-CVI.json")
 
-def test_interpret_saved_config():
-    dir = "test/test_interpret_saved_config"
+def test_interpret_config():
+    dir = "test/test_interpret_config"
     make_default_config(f"{dir}")
     config_clustering = load_json(f"{dir}/config-clustering.json")
     config_CVI = load_json(f"{dir}/config-CVI.json")
 
-    config_CVI_interpreted = interpret_saved_config(config_CVI)
-    config_clustering_interpreted = interpret_saved_config(config_clustering)
+    config_CVI_interpreted = interpret_config(config_CVI)
+    config_clustering_interpreted = interpret_config(config_clustering)
 
     assert check_config(config_clustering_interpreted)
     assert check_config(config_CVI_interpreted)
@@ -164,21 +164,6 @@ def test_interpret_saved_config():
     assert config_CVI_interpreted["config_CVI"]["Hartigan"]["cvi"] == Hartigan
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == sklearn.cluster.KMeans
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == KMeans
-
-
-def test_load_config_as_dict():
-    dir = "test/test_load_config_as_dict"
-    make_default_config(f"{dir}")
-
-    config_CVI_loaded = load_config_as_dict(f"{dir}/config-CVI.json")
-    config_clustering_loaded = load_config_as_dict(f"{dir}/config-clustering.json")
-
-    assert check_config(config_clustering_loaded)
-    assert check_config(config_CVI_loaded)
-    assert config_CVI_loaded["config_CVI"]["Hartigan"]["cvi"] == pycvi.cvi.Hartigan
-    assert config_CVI_loaded["config_CVI"]["Hartigan"]["cvi"] == Hartigan
-    assert config_clustering_loaded["config_clustering"]["KMeans"]["model"] == sklearn.cluster.KMeans
-    assert config_clustering_loaded["config_clustering"]["KMeans"]["model"] == KMeans
 
 def test_get_models_config():
     models_clustering = get_models_config(config_clustering)

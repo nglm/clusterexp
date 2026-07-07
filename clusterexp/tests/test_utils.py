@@ -11,7 +11,7 @@ from pycvi.cvi import Hartigan
 
 from ..utils import (
     class_to_string, get_obj_from_string, obj_to_string, write_json,
-    simplify_dict, interpret_saved_dict, load_json, extract_log_from_text,
+    simplify_dict, interpret_dict, load_json, extract_log_from_text,
 )
 from ..config import (
     make_default_config
@@ -155,14 +155,14 @@ def test_simplify_dict():
     simpler_dict = simplify_dict(config_1)
     write_json("test/test_simplify_dict.json", simpler_dict)
 
-def test_interpret_saved_dict():
-    dir = "test/test_interpret_saved_dict"
+def test_interpret_dict():
+    dir = "test/test_interpret_dict"
     make_default_config(f"{dir}")
     config_clustering = load_json(f"{dir}/config-clustering.json")
     config_CVI = load_json(f"{dir}/config-CVI.json")
 
-    config_CVI_interpreted = interpret_saved_dict(config_CVI)
-    config_clustering_interpreted = interpret_saved_dict(config_clustering)
+    config_CVI_interpreted = interpret_dict(config_CVI)
+    config_clustering_interpreted = interpret_dict(config_clustering)
 
     config_clustering_interpreted
     assert config_CVI_interpreted["config_CVI"]["Hartigan"]["cvi"] == pycvi.cvi.Hartigan

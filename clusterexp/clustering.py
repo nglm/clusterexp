@@ -1,3 +1,5 @@
+"""Helpers for clustering experiments."""
+
 import os
 
 from math import exp
@@ -5,7 +7,7 @@ from pycvi.vi import variation_information
 
 from typing import Tuple, List
 
-from .utils import interpret_saved_dict, load_json
+from .utils import interpret_dict, load_json
 
 def f_quality(VI: float) -> float:
     """
@@ -35,7 +37,7 @@ def f_quality(VI: float) -> float:
 
 def compute_VI_quality(true_clusters, clusterings: dict) -> Tuple[dict, dict]:
     """
-    Compute the Variation of Information (VI) and quality between the true clustering and each predicted clustering.
+    Compute VI and quality for each predicted clustering.
 
     Parameters
     ----------
@@ -46,8 +48,9 @@ def compute_VI_quality(true_clusters, clusterings: dict) -> Tuple[dict, dict]:
 
     Returns
     -------
-    dict
-        A dictionary of VI values for each clustering method.
+    Tuple[dict, dict]
+        Two dictionaries keyed like ``clusterings``: the first contains
+        VI values, and the second contains transformed quality scores.
     """
     # ------------------------ Compute VIs ------------------------------
     # Compute VI between the true clustering and each clustering
@@ -82,8 +85,6 @@ def decompose_exp_fnames(
     ----------
     exp_fnames : list
         A list of experiment filenames.
-    path_res : str
-        The path to the results directory.
 
     Returns
     -------
@@ -111,6 +112,8 @@ def decompose_exp_fnames(
 def group_exp_by_dataset(exp_fnames: List[str]) -> dict:
     """
     Group experiments by dataset.
+
+    Note that the root of the datasets (path_data) is not included here
 
     Parameters
     ----------
@@ -143,7 +146,7 @@ def filter_experiments(
         **constraints,
     ) -> Tuple[dict, dict]:
     """
-    Filter experiment (and datasets) based on quality of the clustering
+    Filter experiments (and datasets) based on clustering quality.
 
     Note that if both "best_q_true" and "best_q_best" are set to True, then only the experiments that are the best for both true and best qualities will be kept.
 
@@ -212,7 +215,7 @@ def filter_experiments(
             keep = True
 
             # Load the experiment
-            exp_log = interpret_saved_dict(exp)
+            exp_log = interpret_dict(exp)
             k_true = exp_log["k_true"]
 
             # Find true and best qualities for this experiment

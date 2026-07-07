@@ -1,3 +1,5 @@
+"""Helpers for discovering and converting datasets from the UCR archive."""
+
 import pandas as pd
 import numpy as np
 import os
@@ -17,22 +19,22 @@ ILL_FORMATED = [
 ]
 ILL_FORMATED_DIR = "Missing_value_and_variable_length_datasets_adjusted/"
 
-# Too many labels
-# (More than 20 in non-time series data, more than 15 in UCR)
-TOO_MANY_LABELS = [
-    # UCR
-    "PigArtPressure", "FiftyWords", "Adiac", "PigCVP", "Phoneme",
-    "PigAirwayPressure", "WordSynonyms", "NonInvasiveFetalECGThorax1",
-    "GestureMidAirD1", "GestureMidAirD2", "GestureMidAirD3",
-    "Crop", "NonInvasiveFetalECGThorax2", "ShapesAll",
-]
+# # Too many labels
+# # (More than 20 in non-time series data, more than 15 in UCR)
+# TOO_MANY_LABELS = [
+#     # UCR
+#     "PigArtPressure", "FiftyWords", "Adiac", "PigCVP", "Phoneme",
+#     "PigAirwayPressure", "WordSynonyms", "NonInvasiveFetalECGThorax1",
+#     "GestureMidAirD1", "GestureMidAirD2", "GestureMidAirD3",
+#     "Crop", "NonInvasiveFetalECGThorax2", "ShapesAll",
+# ]
 
-# Too many samples
-# (More than 10000)
-TOO_MANY_SAMPLES = [
-    # UCR
-    "ElectricDevices", "Crop", "FordA", "FordB"
-]
+# # Too many samples
+# # (More than 10000)
+# TOO_MANY_SAMPLES = [
+#     # UCR
+#     "ElectricDevices", "Crop", "FordA", "FordB"
+# ]
 
 def find_datasets_UCR(
     path_ucr:str,
@@ -53,6 +55,10 @@ def find_datasets_UCR(
     ----------
     path_ucr : str
         Path to the folder containing datasets.
+    with_ill_formated : bool, optional
+        If ``True``, keep datasets from the adjusted directory that have
+        missing values or variable lengths. If ``False``, exclude the
+        ill-formatted variants.
 
     Returns
     -------
@@ -96,8 +102,19 @@ def save_data_labels_UCR(
 
     Parameters
     ----------
+    fnames : List[str]
+        Dataset base names relative to ``path_ucr`` without the
+        ``_TRAIN.tsv`` suffix.
     path_ucr : str
         Path to the UCR data folder.
+    path_data : str, optional
+        Destination directory where ``*_data.npy`` and
+        ``*_labels.npy`` files will be written.
+
+    Returns
+    -------
+    None
+        This function writes NumPy arrays to disk and returns nothing.
     """
 
     # Make sure all path exists otherwise create it
@@ -116,9 +133,9 @@ def save_data_labels_UCR(
 
 def get_data_labels_UCR(
     fname: str,
-) -> Tuple[np.ndarray, Union[None, np.ndarray], int]:
+) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Get dataset and labels number from the original UCR data folder
+    Load a UCR training split and return reshaped data with labels.
 
     Parameters
     ----------
@@ -128,9 +145,9 @@ def get_data_labels_UCR(
 
     Returns
     -------
-    Tuple[np.ndarray, Union[None, np.ndarray]]
-        Time-series data reshaped as ``(N, T, 1)``, encoded labels,
-        number of labels.
+    Tuple[np.ndarray, np.ndarray]
+        Time-series data reshaped as ``(N, T, 1)`` together with the
+        encoded labels.
     """
 
     df = pd.read_csv(f"{fname}", sep="\t")

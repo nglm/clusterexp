@@ -23,7 +23,7 @@ def test_find_datasets():
 def test_load_data_labels():
     datasets = find_datasets(path_data)
     for d in datasets:
-        data, labels = load_data_labels(f"{d}")
+        data, labels = load_data_labels(f"{path_data}{d}")
 
         # Check types
         assert isinstance(data, np.ndarray)
@@ -40,7 +40,7 @@ def test_filter_datasets():
         "exclude": ["arrhythmia", "2d-4c-no"],
         "include_only": ["artificial/"]
     }
-    datasets = find_datasets(path_data)
+    datasets = find_datasets(path_data, include_path_data=True)
 
     constraints2 = {}
 

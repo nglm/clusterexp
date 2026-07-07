@@ -1,3 +1,5 @@
+"""Helpers for fetching and converting Barton benchmark datasets."""
+
 import io
 import urllib.request
 from scipy.io import arff
@@ -11,8 +13,6 @@ from typing import List, Dict, Tuple, Union
 from .data import process_labels
 
 URL_ROOT = 'https://raw.githubusercontent.com/nglm/clustering-benchmark/master/src/main/resources/datasets/'
-
-N_SAMPLES_MAX = 10000
 
 # Just one cluster
 UNIMODAL = [
@@ -51,26 +51,26 @@ INVALID = [
     "yeast.arff",
 ]
 
+# N_SAMPLES_MAX = 10000
 
+# # Too many labels
+# # (More than 20 in non-time series data, more than 15 in UCR)
+# TOO_MANY_LABELS = [
+#     # artificial
+#     "D31.arff", "fourty.arff",
+#     # real-world
+#     "cpu.arff", "letter.arff",
+# ]
 
-# Too many labels
-# (More than 20 in non-time series data, more than 15 in UCR)
-TOO_MANY_LABELS = [
-    # artificial
-    "D31.arff", "fourty.arff",
-    # real-world
-    "cpu.arff", "letter.arff",
-]
-
-# Too many samples
-# (More than 10000)
-TOO_MANY_SAMPLES = [
-    # artificial
-    "mopsi-finland.arff", "birch-rg3.arff", "birch-rg2.arff",
-    "birch-rg1.arff",
-    # real-world
-    "letter.arff",
-]
+# # Too many samples
+# # (More than 10000)
+# TOO_MANY_SAMPLES = [
+#     # artificial
+#     "mopsi-finland.arff", "birch-rg3.arff", "birch-rg2.arff",
+#     "birch-rg1.arff",
+#     # real-world
+#     "letter.arff",
+# ]
 
 def get_list_datasets_from_github(
         data_source: str = "artificial",
@@ -79,6 +79,23 @@ def get_list_datasets_from_github(
     ) -> List[str]:
     """
     Get the list of datasets from the GitHub repository.
+
+    Parameters
+    ----------
+    data_source : str, optional
+        Dataset list to fetch, typically ``"artificial"`` or
+        ``"real-world"``.
+    with_unknown_k : bool, optional
+        If ``False``, exclude datasets whose number of clusters is not
+        known in advance, except unimodal datasets.
+    with_invalid : bool, optional
+        If ``False``, exclude datasets listed in :data:`INVALID`.
+
+    Returns
+    -------
+    List[str]
+        Dataset filenames published in the remote repository after the
+        requested filters are applied.
     """
     all_datasets = []
     for line in urllib.request.urlopen(f"{URL_ROOT}{data_source}.txt"):
@@ -127,7 +144,7 @@ def load_data_from_github(
     with_labels: bool = True
 ) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
     """
-    Return data, labels, and metadata from an GitHub ARFF URL.
+    Return data, labels, and metadata from a GitHub ARFF URL.
 
     Non-numerical variables are ignored.
 
@@ -169,7 +186,7 @@ def get_data_labels(
     url: str,
 ) -> Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]:
     """
-    Get dataset, labels, and metadata from GitHub
+    Get a dataset, labels, and metadata from GitHub.
 
     It is important to keep fname and url separate, as fname is used to
     check if the dataset is in the UNLABELED or UNIMODAL lists.
@@ -187,7 +204,8 @@ def get_data_labels(
     Returns
     -------
     Tuple[np.ndarray, Union[None, np.ndarray], arff.MetaData]
-        Data array, optional labels, and ARFF metadata.
+        Data array, optional labels, and ARFF metadata. Labels are
+        synthesized as a single class for known unimodal datasets.
     """
     n_labels = None
 
@@ -226,6 +244,21 @@ def save_data_labels_from_github(
 ) -> None:
     """
     Save data and labels from GitHub to CSV files.
+
+    Parameters
+    ----------
+    dataset_names : List[str]
+        Dataset filenames to download.
+    path_data : str, optional
+        Destination directory where ``*_data.csv`` and ``*_labels.csv``
+        files will be written.
+    data_source : str, optional
+        Dataset collection to read from under :data:`URL_ROOT`.
+
+    Returns
+    -------
+    None
+        This function writes CSV files to disk and returns nothing.
     """
     os.makedirs(path_data, exist_ok=True)
 

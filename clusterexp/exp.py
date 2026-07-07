@@ -1,3 +1,5 @@
+"""Experiment orchestration for full pipeline."""
+
 import os
 import sys
 from datetime import datetime
@@ -5,16 +7,18 @@ import numpy as np
 import time
 from pycvi.cluster import get_clustering, generate_all_clusterings
 
-from .config import load_config_as_dict, get_models_config
+from .config import interpret_config, get_models_config
 from .data import find_datasets, filter_datasets, load_data_labels, is_time_series
-from .utils import save_log, print_log, interpret_saved_dict
+from .utils import save_log, print_log, interpret_dict
 from .clustering import compute_VI_quality, filter_experiments
 
 from typing import Union
 
 def prepare_data(config_fname:str) -> dict:
     """
-    - Reads the config file: function `load_config_as_dict`
+    Prepare datasets and write a data-selection log.
+
+    - Reads the config file: function `interpret_config`
     - Prints the initiated log file containing the config file used `print_log` function
     - Find all datasets in the path_data folder (using the function `find_datasets`)
     - filter datasets based on the path_data and constraints defined in the config file (using the function `filter_datasets`)
@@ -29,9 +33,21 @@ def prepare_data(config_fname:str) -> dict:
     - Save the merged dictionary ``log-data-20XX-XX-XX.json``  with the function `save_log`
     - Save output log file ``log-data-20XX-XX-XX.txt``
     - Returns the merged dictionary ``log-data-20XX-XX-XX.json`` as a dict
+
+    Parameters
+    ----------
+    config_fname : str
+        Path to the configuration file containing at least a
+        ``config_data`` section.
+
+    Returns
+    -------
+    dict
+        Log dictionary containing the interpreted data config, dataset
+        filtering results, and the generated log filename.
     """
     # ---------------- Read config file ---------------------
-    config = load_config_as_dict(config_fname)
+    config = interpret_config(config_fname)
     if "config_data" not in config:
         raise ValueError("The config file must contain a 'config_data' key.")
     path_data = config['config_data']['path_data']
@@ -60,7 +76,9 @@ def prepare_data(config_fname:str) -> dict:
     constraints.pop('path_data', None)
     constraints.pop('path_res', None)
 
-    filtered_datasets = filter_datasets(datasets, **constraints)
+    filtered_datasets = filter_datasets(
+        datasets, path_data=path_data, **constraints
+    )
 
     # -------------------- Finalize log and save --------------
     log['log_data'].update(filtered_datasets)
@@ -103,18 +121,33 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
                 - clusterings
                 - VI
                 - quality
+
+    Parameters
+    ----------
+    config_fname : str
+        Path to the configuration file containing at least a
+        ``config_clustering`` section.
+    log_data_fname : Union[str, None], optional
+        Path to an existing data log. When omitted, :func:`prepare_data`
+        is called first.
+
+    Returns
+    -------
+    dict
+        Log dictionary combining data-selection information, clustering
+        configuration, experiment file paths, and timing information.
     """
     # ------------- Read config file and previous log ------------------
     t_start = time.time()
 
-    config = load_config_as_dict(config_fname)
+    config = interpret_config(config_fname)
     if "config_clustering" not in config:
         raise ValueError("The config file must contain a 'config_clustering' key.")
 
     if log_data_fname is None:
         log_data = prepare_data(config_fname)
     else:
-        log_data = interpret_saved_dict(log_data_fname)
+        log_data = interpret_dict(log_data_fname)
 
     path_data = log_data['config_data']['path_data']
     path_res = log_data['config_data']['path_res']
@@ -148,7 +181,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
     for d in path_datasets:
 
         print(f" =============== DATASET {d} =============== ")
-        data, labels = load_data_labels(d)
+        data, labels = load_data_labels(f"{path_data}{d}")
         clustering_true = get_clustering(labels)
 
         data, ts_dist = is_time_series(data)
@@ -235,7 +268,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
 def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] = None) -> dict:
     """
-    Create CVI files for each non-filtered experiment in the log file
+    Create CVI result files for each non-filtered clustering experiment.
 
     - Relying on `log-clustering-20XX-XX-XX.json`.
     - Creates a text logfile `log-CVI-20XX-XX-XX.txt`. Fully reads `config-data.json` and `config-clustering.json`, `config-CVI.json` at the very beginning of the logfile.
@@ -272,18 +305,33 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
         - `k_selected`
         - `time`
 
+    Parameters
+    ----------
+    config_fname : str
+        Path to the configuration file containing at least a
+        ``config_CVI`` section.
+    log_clustering_fname : Union[str, None], optional
+        Path to an existing clustering log. When omitted,
+        :func:`create_clusterings` is called first.
+
+    Returns
+    -------
+    dict
+        Log dictionary containing CVI configuration, filtered
+        experiments, generated CVI file paths, and timing information.
+
     """
     # ------------- Read config file and previous log ------------------
     t_start = time.time()
 
-    config = load_config_as_dict(config_fname)
+    config = interpret_config(config_fname)
     if "config_CVI" not in config:
         raise ValueError("The config file must contain a 'config_CVI' key.")
 
     if log_clustering_fname is None:
         log_clustering = create_clusterings(config_fname)
     else:
-        log_clustering = interpret_saved_dict(log_clustering_fname)
+        log_clustering = interpret_dict(log_clustering_fname)
 
     path_data = log_clustering['config_data']['path_data']
     path_res = log_clustering['config_data']['path_res']

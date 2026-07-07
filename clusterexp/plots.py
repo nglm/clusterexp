@@ -1,3 +1,4 @@
+"""Plotting helpers for benchmark datasets and clustering comparisons."""
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -20,6 +21,12 @@ def _get_nrows_ncols(nplots: int = None):
     nplots : int, optional
         Number of plots, by default None, resulting in `nplots=len(CVIs)
         + 2`
+
+    Returns
+    -------
+    Tuple[int, int, Tuple[int, int]]
+        Number of rows, number of columns, and the suggested figure
+        size.
     """
     if nplots is None:
         nplots = len(CVIs) + 2
@@ -88,18 +95,18 @@ def plot_cluster(
     Parameters
     ----------
     ax : A matplotlib axes
-        Where to plot the cluster
+        Axes on which to draw the cluster.
     data : np.ndarray
-        The dataset
+        Dataset to visualize.
     cluster : List[int]
-        The indices representing the cluster
-    color : _type_
-        The color to use to plot the cluster
+        Sample indices belonging to the cluster.
+    color : Any
+        Matplotlib-compatible color used for the cluster.
 
     Returns
     -------
-    A matplotlib axes
-        The same matplotlib axes, but with the cluster plotted.
+    matplotlib.axes.Axes
+        The same axes object, updated with the cluster plot.
     """
     # Get the full shape and whether it is time-series data.
     (N, T, d), UCR = _get_shape_UCR(data)
@@ -148,20 +155,20 @@ def plot_clusters(
     ----------
     data : np.ndarray, shape (N, d)
         Original data, corresponding to a benchmark dataset
-    summary_selected : Dict[int, Dict[str, Any]]
-        A dictionary containing for each selected k ("k_selected"), all
-        information on the selected clustering ("#CVI, "clustering",
-        "ax_title")
-    titles : List[str]
-        List of titles for each CVI
+    clusterings_selected : List[List[List[int]]]
+        Clusterings to plot, one per subplot after the two reference
+        plots.
     fig : A matplotlib figure
         Figure where all the plots are (including 2 about the true
         clusters)
+    titles : List[str]
+        Titles to apply to each clustering subplot.
 
     Returns
     -------
-    A matplotlib figure
-        A figure with one clustering per CVI (+2 plots first)
+    matplotlib.figure.Figure
+        Figure with one clustering subplot per entry in
+        ``clusterings_selected``.
     """
     (N, T, d), UCR = _get_shape_UCR(data)
     colors = _get_colors()
@@ -222,8 +229,10 @@ def plot_true(
 
     Returns
     -------
-    A matplotlib figure
-        The figure with 2 plots on it, and many empty axes.
+    matplotlib.figure.Figure | None
+        Figure with the true clustering and the clustering at ``k_true``
+        plus empty axes for later plots, or ``None`` for unsupported
+        3D cases.
     """
     (N, T, d), UCR = _get_shape_UCR(data)
     colors = _get_colors()
@@ -368,10 +377,9 @@ def plot_true_diff(
 
     Returns
     -------
-    A matplotlib figure
-        The figure with 3 plots on it
-    List[List[int]]
-        The [correct, misclassified] datapoints
+    Tuple[matplotlib.figure.Figure, List[List[int]]]
+        Figure with three comparison plots, together with the lists of
+        correctly classified and misclassified sample indices.
     """
     (N, T, d), UCR = _get_shape_UCR(data)
     colors_list = _get_colors()

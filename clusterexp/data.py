@@ -154,7 +154,10 @@ def write_list_datasets(fname:str, lines: List[str]) -> None:
         f.write('\n'.join(lines))
 
 
-def find_datasets(path_data:str) -> List[str]:
+def find_datasets(
+    path_data:str,
+    include_path_data: bool = False
+) -> List[str]:
     """
     Find datasets in a given folder.
 
@@ -177,11 +180,14 @@ def find_datasets(path_data:str) -> List[str]:
     ----------
     path_data : str
         Path to the folder containing datasets.
+    include_path_data : bool, optional
+        If ``True``, return dataset paths including the ``path_data``
+        prefix. Otherwise return paths relative to ``path_data``.
 
     Returns
     -------
     List[str]
-        List of dataset names found in the folder.
+        Dataset paths whose data and label files both exist.
     """
     datasets = []
     extensions = [".csv", ".tsv", ".npy"]
@@ -211,6 +217,10 @@ def find_datasets(path_data:str) -> List[str]:
         for f in kept_data_fnames:
             datasets.append(os.path.join(root, f))
 
+    # Remove the path_data prefix from all datasets
+    if not include_path_data:
+        datasets = [os.path.relpath(d, path_data) for d in datasets]
+
     return datasets
 
 def load_data_labels(
@@ -227,7 +237,8 @@ def load_data_labels(
     Returns
     -------
     Tuple[np.ndarray, np.ndarray]
-        Data array and labels array.
+        Data array and labels array loaded from matching ``*_data.ext`` and
+        ``*_labels.ext`` files, where `ext` can be "csv", "tsv", or "npy".
     """
     # We could directly replace _data without the extension but it's a bit less
     # safe, in case the pattern "_data" appears somewhere else in the path
@@ -245,7 +256,10 @@ def load_data_labels(
         raise ValueError(f"Unsupported extension: {ext}. Use 'csv', 'tsv' or 'npy'.")
     return data, labels
 
-def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
+def filter_datasets(
+        datasets:List[str],
+        path_data:str = "",
+        **constraints) -> Dict[str, List[str]]:
     """
     Filter datasets based on specified constraints.
 
@@ -253,6 +267,8 @@ def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
     ----------
     datasets : List[str]
         List of dataset names to filter.
+    path_data : str, optional
+        Path to the folder containing datasets, by default "". By default, `datasets` are assumed to omit `path_data` prefix,
     **constraints : dict
         Constraints to apply for filtering. Possible keys include:
         - 'max_n_samples': Maximum number of samples allowed.
@@ -264,7 +280,8 @@ def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
     Returns
     -------
     Dict[str, List[str]]
-        Filtered dictionary of dataset names that meet the specified constraints.
+        Dictionary with ``kept_datasets`` and ``dropped_datasets``
+        entries describing which datasets passed each constraint.
     """
     dropped ={
             "max_n_samples": [],
@@ -277,7 +294,7 @@ def filter_datasets(datasets:List[str], **constraints) -> Dict[str, List[str]]:
 
     for dataset in datasets:
         # Load the dataset to get its properties
-        data, labels = load_data_labels(dataset)
+        data, labels = load_data_labels(f"{path_data}{dataset}")
 
         data_shape = data.shape
         n_samples = data_shape[0]

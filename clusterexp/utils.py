@@ -93,20 +93,59 @@ def get_obj_from_string(obj_str: str) -> Any:
 
 def class_to_string(cls):
     """
-    Return the string corresponding to a class.
+    Return the fully qualified import path for a class.
 
     Note that this can yield the "hidden" class of an object, with
     hidden module names
+
+    Parameters
+    ----------
+    cls : type
+        Class object to convert to a module-qualified string.
+
+    Returns
+    -------
+    str
+        Import path in the form ``"package.module.ClassName"``.
     """
     return f"{cls.__module__}.{cls.__name__}"
 
 def obj_to_string(obj):
+    """
+    Return a readable string describing an object's concrete class.
+
+    Note that this can yield the "hidden" class of an object, with
+    hidden module names
+
+    Parameters
+    ----------
+    obj : Any
+        Object instance to describe.
+
+    Returns
+    -------
+    str
+        String in the form ``"Instance of package.module.ClassName"``.
+    """
     cls = obj.__class__
     return f"Instance of {cls.__module__}.{cls.__name__}"
 
 def serialize(obj):
     """
     Serialize an object to a JSON-compatible format.
+
+    Parameters
+    ----------
+    obj : Any
+        Object to serialize.
+
+    Returns
+    -------
+    Any
+        JSON-serializable representation of ``obj``. Sequences and
+        dictionaries are converted recursively, NumPy arrays are turned
+        into lists, and classes or functions are written as importable
+        strings.
     """
     # To check if the object is serializable
     try:
@@ -134,9 +173,19 @@ def serialize(obj):
 
 def simplify_dict(config:dict) -> dict:
     """
-    Translate a given dict to a jsonable dict
+    Translate a dictionary to a JSON-serializable dictionary.
 
-    Classes and functions will be written as package.module.class
+    Parameters
+    ----------
+    config : dict
+        Dictionary whose values may include arrays, classes, functions,
+        or nested structures.
+
+    Returns
+    -------
+    dict
+        Copy of ``config`` where values unsupported by JSON are replaced
+        by serialized representations.
     """
     #normal_types = [Sequence, str, list, dict, int, float, bool, type(None)]
 
@@ -146,17 +195,28 @@ def simplify_dict(config:dict) -> dict:
         simpler_dict[k] = serialize(v)
     return simpler_dict
 
-def interpret_saved_dict(config:Union[dict, str]) -> dict:
+def interpret_dict(config:Union[dict, str]) -> dict:
     """
     Translate a given dict to a config dict, using classes and functions
 
     Make sure that classes and functions are written as
-    package.module.class
+    ``package.module.class``.
 
     This function works for dict that are not config (and will not
     complement with default values). For a function specially designed
-    for config dict, see `interpret_saved_config` (which will complement
+    for config dict, see `interpret_config` (which will complement
     with default values).
+
+    Parameters
+    ----------
+    config : Union[dict, str]
+        Dictionary to interpret, or path to a JSON file containing one.
+
+    Returns
+    -------
+    dict
+        Dictionary where importable strings have been replaced with the
+        corresponding Python objects.
     """
     if isinstance(config, str):
         if not config.endswith(".json"):
@@ -175,7 +235,7 @@ def interpret_saved_dict(config:Union[dict, str]) -> dict:
                 interpreted_dict[k] = v
         # If the value is a dict, recursively interpret it
         elif isinstance(v, dict):
-            interpreted_dict[k] = interpret_saved_dict(v)
+            interpreted_dict[k] = interpret_dict(v)
         # Else, assume that the format is correct and keep the value as is
         else:
             interpreted_dict[k] = v
@@ -352,7 +412,19 @@ def print_log(
         log:dict,
     ) -> None:
     """
-    Print a log dict in a readable format
+    Print a log dictionary in a readable text block.
+
+    Adds a `START LOG` and `END LOG` markers to the output to easily extract the log from a text file (see :func:`extract_log_from_text`).
+
+    Parameters
+    ----------
+    log : dict
+        Log dictionary to serialize and print.
+
+    Returns
+    -------
+    None
+        This function prints to standard output and returns nothing.
     """
     simpler_dict = simplify_dict(log)
     print(f"\n┌─{'─'*70}─┐")
@@ -379,8 +451,9 @@ def extract_log_from_text(fname) -> list[dict]:
 
     Returns
     -------
-    l_logs : list[dict]
-        A list of log dicts extracted from the text file.
+    list[dict]
+        Log dictionaries extracted from the text file, in the order in
+        which they appear.
     """
     with open(fname, 'r') as f:
         lines = f.readlines()
@@ -391,7 +464,7 @@ def extract_log_from_text(fname) -> list[dict]:
         json_lines = [l for l in lines[i_start + 1:i_end]]
         json_str = "".join(json_lines)
         json_dict = json.loads(json_str)
-        l_logs.append(interpret_saved_dict(json_dict))
+        l_logs.append(interpret_dict(json_dict))
     return l_logs
 
 

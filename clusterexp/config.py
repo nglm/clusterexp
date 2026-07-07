@@ -7,7 +7,7 @@ import json
 import numpy as np
 from pathlib import Path
 
-from .utils import write_json, interpret_saved_dict
+from .utils import write_json, interpret_dict
 
 CONFIG_DATA_BASE = {
     "config_data" : {
@@ -239,7 +239,13 @@ CONFIG_DEFAULT_VALUES = {
 
 def get_mandatory_keys() -> dict:
     """
-    Return the mandatory keys and their expected type in a config dict
+    Return the mandatory keys and expected value types for configs.
+
+    Returns
+    -------
+    dict
+        Mapping from top-level config sections to their required keys
+        and, when relevant, required per-model keys.
     """
 
     keys = {
@@ -307,6 +313,11 @@ def make_default_config(
         filename to create the config files in multiple directories, by
         default ``[ "config-data.json", "config-clustering.json",
         "config-clustering-time_series.json", "config-CVI.json" ]``.
+
+    Returns
+    -------
+    None
+        This function writes default configuration files to disk.
     """
 
 
@@ -333,7 +344,7 @@ def make_default_config(
 
 def add_default(config:dict) -> dict:
     """
-    Complement given config with default parameters
+    Complement a config dictionary with default parameters.
 
     For data: Add ``exclude`` and ``include``, ``max_n_samples``,
     ``max_n_labels``, ``max_n_dims``, ``path_data``, ``path_res`` if not
@@ -349,6 +360,16 @@ def add_default(config:dict) -> dict:
 
     For each CVI model: Add ``cvi_kw`` if not present (but not ``cvi``,
     which is in any case mandatory).
+
+    Parameters
+    ----------
+    config : dict
+        Partially specified configuration dictionary.
+
+    Returns
+    -------
+    dict
+        Configuration dictionary completed with missing default values.
     """
 
     # Get the subset of the config about the models (cvi, clustering)
@@ -376,9 +397,9 @@ def add_default(config:dict) -> dict:
 
 
 
-def interpret_saved_config(config:dict) -> dict:
+def interpret_config(config:Union[dict, str]) -> dict:
     """
-    Translate a given dict to a config dict, using classes and functions
+    Interpret a config dictionary or JSON file into proper config dict.
 
     Make sure that classes and functions are written as
     package.module.class
@@ -386,10 +407,21 @@ def interpret_saved_config(config:dict) -> dict:
     This function will also add the default values to the config.
 
     For a function that works for dict in general that are not config,
-    see `interpret_saved_dict` .
+    see :func:`interpret_dict` .
+
+    Parameters
+    ----------
+    config : Union[dict, str]
+        Config dictionary or path to a JSON config file.
+
+    Returns
+    -------
+    dict
+        Interpreted config with import strings resolved and default
+        values added when top-level config sections are present.
     """
 
-    interpreted_dict = interpret_saved_dict(config)
+    interpreted_dict = interpret_dict(config)
 
     # Check if we are in the top level case (this function is recursive)
     top_level_keys = {"config_data", "config_clustering", "config_CVI"}
@@ -399,24 +431,20 @@ def interpret_saved_config(config:dict) -> dict:
         interpreted_dict = add_default(interpreted_dict)
     return interpreted_dict
 
-
-def load_config_as_dict(config_fname: str) -> dict:
-    """
-    Load a given config (json file) as a dict"
-
-    Interpret classes and objects that are written as package.module.class,
-    and then load them properly, as objects and classes, not as strings
-
-    Add default values to the config if they are not present.
-    """
-    with open(config_fname, "r") as f:
-        config_dict = json.load(f)
-    return interpret_saved_config(config_dict)
-
-
 def get_models_config(config:dict) -> dict:
     """
-    Extract models config from a config (cvi, clustering)
+    Extract per-model configuration blocks from a config.
+
+    Parameters
+    ----------
+    config : dict
+        Full configuration dictionary.
+
+    Returns
+    -------
+    dict
+        Nested dictionary containing only the model
+        entries for each supported config section.
     """
     all_keys = get_mandatory_keys()
 
@@ -443,7 +471,17 @@ def check_config( config:dict, ) -> bool:
     Check that the config has all necessary keys (after adding default).
 
     This function assumes that default parameters have already been added
-    to the user-defined config
+    to the user-defined config.
+
+    Parameters
+    ----------
+    config : dict
+        Configuration dictionary to validate.
+
+    Returns
+    -------
+    bool
+        ``True`` when all mandatory sections and keys are present.
     """
 
     all_keys = get_mandatory_keys()
