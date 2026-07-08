@@ -5,8 +5,7 @@ import pytest
 from clusterexp.utils import (write_json, extract_log_from_text)
 
 from clusterexp.exp import (
-    create_clusterings,
-    prepare_data
+    create_clusterings, prepare_data, compute_CVI_values
 )
 
 config1 = {
@@ -22,7 +21,10 @@ config1 = {
     "config_CVI": {
         "seed": 221,
         "Hartigan": {
-            "cvi": "pycvi.cvi.Hartigan"
+            "cvi": "pycvi.cvi.Hartigan",
+            "cvi_kw" : {
+                "rng" : 221
+            }
         },
         "Inertia-sum": {
             "cvi": "pycvi.cvi.Inertia",
@@ -38,7 +40,6 @@ config1 = {
         }
     },
     "config_clustering" : {
-        "seed" : 221,
         "k_range" : [1, 25],
         "KMeans" : {
             "model" : "sklearn.cluster.KMeans",
@@ -117,6 +118,32 @@ def test_create_clusterings():
 
     # Make sure that the text log file contain 2 logs and that the last log corresponds to the log dictionary
     l_log_extracted = extract_log_from_text(f"{log['log_clustering']['log_fname']}.txt")
+
+    assert isinstance(l_log_extracted, list)
+    assert len(l_log_extracted) == 2
+    assert l_log_extracted[-1] == log
+
+def test_compute_CVI_values():
+
+    dir = "test/test_compute_CVI_values"
+    config_fname = f"{dir}/config.json"
+    config2 = config1.copy()
+    config2["config_data"]["path_res"] = f"{dir}/"
+    write_json(config_fname, config2)
+
+    log = compute_CVI_values(config_fname)
+
+    assert isinstance(log, dict)
+    assert "config_data" in log
+    assert "log_data" in log
+    assert "log_clustering" in log
+    assert "config_clustering" in log
+    assert "log_CVI" in log
+    assert "config_CVI" in log
+    assert log["config_data"] == config2["config_data"]
+
+    # Make sure that the text log file contain 2 logs and that the last log corresponds to the log dictionary
+    l_log_extracted = extract_log_from_text(f"{log['log_CVI']['log_fname']}.txt")
 
     assert isinstance(l_log_extracted, list)
     assert len(l_log_extracted) == 2

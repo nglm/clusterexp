@@ -60,7 +60,6 @@ config_cvi = {
 
 config_clustering = {
   "config_clustering": {
-    "seed": 221,
     "k_range": [
       1,
       25

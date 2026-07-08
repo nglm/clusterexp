@@ -60,7 +60,6 @@ def test_group_exp_by_dataset():
         "path_res" : "test/test_prepare_data/",
     },
     "config_clustering" : {
-        "seed" : 221,
         "k_range" : [1, 25],
         "KMeans" : {
             "model" : "sklearn.cluster.KMeans",
@@ -116,7 +115,6 @@ def test_filter_experiments():
         "max_n_labels" : 25,
     },
     "config_clustering" : {
-        "seed" : 221,
         "k_range" : [1, 25],
         "KMeans" : {
             "model" : "sklearn.cluster.KMeans",

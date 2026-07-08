@@ -23,11 +23,12 @@ CONFIG_DATA_BASE = {
 
 CONFIG_CLUSTERING_BASE = {
     "config_clustering" : {
-        "seed" : 221,
         "k_range" : [1, 25],
         "KMeans" : {
             "model" : "sklearn.cluster.KMeans",
-            "model_kw" : {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw" : {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
@@ -54,14 +55,19 @@ CONFIG_CLUSTERING_BASE = {
         },
         "SpectralClustering" : {
             "model": "sklearn.cluster.SpectralClustering",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "KMedoids" : {
             "model": "kmedoids.KMedoids",
-            "model_kw": {"metric": "euclidean"},
+            "model_kw": {
+                "metric": "euclidean",
+                "random_state" : 221,
+                },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
@@ -71,67 +77,84 @@ CONFIG_CLUSTERING_BASE = {
 
 CONFIG_CLUSTERING_TIME_SERIES_BASE = {
     "config_clustering" : {
-        "seed" : 221,
         "k_range" : [1, 25],
         "KASBA" : {
             "model" : "aeon.clustering.KASBA",
-            "model_kw" : {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw" : {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "KShape" : {
             "model": "aeon.clustering.KShape",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "TimeSeriesKMeans" : {
             "model": "aeon.clustering.TimeSeriesKMeans",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "TimeSeriesKMedoids" : {
             "model": "aeon.clustering.TimeSeriesKMedoids",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "TimeSeriesKernelKMeans" : {
             "model": "aeon.clustering.TimeSeriesKernelKMeans",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "TimeSeriesCLARA" : {
             "model": "aeon.clustering.TimeSeriesCLARA",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "TimeSeriesCLARANS" : {
             "model": "aeon.clustering.TimeSeriesCLARANS",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "ElasticSOM" : {
             "model": "aeon.clustering.ElasticSOM",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
         },
         "KSpectralCentroid" : {
             "model": "aeon.clustering.KSpectralCentroid",
-            "model_kw": {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
@@ -152,18 +175,27 @@ CONFIG_CLUSTERING_TIME_SERIES_BASE = {
 CONFIG_CVI_BASE = {
     "config_CVI" : {
         "seed" : 221,
-        "quality_true_min" : 0.6,
-        "quality_best_min" : 0.6,
+        "quality_true_min" : 0.,
+        "quality_best_min" : 0.,
         "best_q_true_only" : False,
         "best_q_best_only" : False,
         "Hartigan" : {
-            "cvi" : "pycvi.cvi.Hartigan"
+            "cvi" : "pycvi.cvi.Hartigan",
+            "cvi_kw" : {
+                "rng" : 221
+            }
         },
         "CalinskiHarabasz" : {
-            "cvi" : "pycvi.cvi.CalinskiHarabasz"
+            "cvi" : "pycvi.cvi.CalinskiHarabasz",
+            "cvi_kw" : {
+                "rng" : 221
+            }
         },
         "GapStatistic" : {
-            "cvi" : "pycvi.cvi.GapStatistic"
+            "cvi" : "pycvi.cvi.GapStatistic",
+            "cvi_kw" : {
+                "rng" : 221
+            }
         },
         "Silhouette" : {
             "cvi" : "pycvi.cvi.Silhouette"
@@ -194,13 +226,13 @@ CONFIG_CVI_BASE = {
         },
         "Inertia-sum" : {
             "cvi" : "pycvi.cvi.Inertia",
-            "cvi_kw" : {
+            "cvi_init_kw" : {
                 "reduction" : "sum"
             }
         },
         "Diameter-max" : {
             "cvi" : "pycvi.cvi.Diameter",
-            "cvi_kw" : {
+            "cvi_init_kw" : {
                 "reduction" : "max"
             }
         }
@@ -219,7 +251,6 @@ CONFIG_DEFAULT_VALUES = {
     },
     "config_clustering" : {
         "k_range" : None,
-        "seed" : 221,
         "lower" : {
             "model_kw" : {},
             "fit_predict_kw" : {},
@@ -232,6 +263,7 @@ CONFIG_DEFAULT_VALUES = {
         "quality_true_min" : 0.0,
         "quality_best_min" : 0.0,
         "lower" : {
+            "cvi_init_kw" : {},
             "cvi_kw" : {}
         }
     }
@@ -263,7 +295,6 @@ def get_mandatory_keys() -> dict:
         },
         "config_clustering" : {
             "mandatory" : {
-                "seed": int,
                 "k_range": (list, tuple, np.ndarray),
             },
             "lower" : {
@@ -286,6 +317,7 @@ def get_mandatory_keys() -> dict:
             },
             "lower" : {
                 "cvi": object,
+                "cvi_init_kw": dict,
                 "cvi_kw": dict
             },
         },
@@ -358,8 +390,8 @@ def add_default(config:dict) -> dict:
 
     For the general CVI config: Add ``quality_true_min``, ``quality_best_min``, ``seed``, ``best_q_true_only``, ``best_q_best_only`` if not present.
 
-    For each CVI model: Add ``cvi_kw`` if not present (but not ``cvi``,
-    which is in any case mandatory).
+    For each CVI model: Add ``cvi_kw`` and ``cvi_init_kw`` if not
+    present (but not ``cvi``, which is in any case mandatory).
 
     Parameters
     ----------
