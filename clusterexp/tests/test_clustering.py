@@ -32,6 +32,7 @@ def test_compute_VI_quality():
     assert all(isinstance(q, float) for q in qualities.values())
 
 def test_decompose_exp_fnames():
+
     exp_fnames = [
         "res/KMeans/artificial/2d-4c-no-clustering.json",
         "res/Agglomerative-Single/artificial/2d-4c-no-clustering.json",

@@ -115,6 +115,10 @@ def group_exp_by_dataset(exp_fnames: List[str]) -> dict:
 
     Note that the root of the datasets (path_data) is not included here
 
+    The dictionary is sorted by dataset name (yes, I am aware that
+    dictionaries are not really ordered, it's just a plus) and the list
+    of experiments for each dataset is sorted by experiment filename.
+
     Parameters
     ----------
     exp_fnames : list
@@ -130,6 +134,7 @@ def group_exp_by_dataset(exp_fnames: List[str]) -> dict:
 
     # Find all datasets
     datasets = set([path_dataset for _, path_dataset in decomposed_exp])
+    datasets = sorted(list(datasets))
 
     # Group experiments by dataset
     grouped_exp = {}
