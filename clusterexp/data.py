@@ -221,7 +221,7 @@ def find_datasets(
     if not include_path_data:
         datasets = [os.path.relpath(d, path_data) for d in datasets]
 
-    return datasets
+    return sorted(datasets)
 
 def load_data_labels(
     fname_data: str,
@@ -291,6 +291,8 @@ def filter_datasets(
             "include_only": [],
     }
     kept = []
+
+    datasets = sorted(datasets)
 
     for dataset in datasets:
         # Load the dataset to get its properties

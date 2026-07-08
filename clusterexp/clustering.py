@@ -134,10 +134,10 @@ def group_exp_by_dataset(exp_fnames: List[str]) -> dict:
     # Group experiments by dataset
     grouped_exp = {}
     for d in datasets:
-        grouped_exp[d] = [
+        grouped_exp[d] = sorted([
             fname for fname, decomp_exp in zip(exp_fnames, decomposed_exp)
             if decomp_exp[1] == d
-        ]
+        ])
 
     return grouped_exp
 
