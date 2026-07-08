@@ -1,7 +1,5 @@
 """Additional util fonctions not related to datasets, config or plots"""
 
-
-import pandas as pd
 import numpy as np
 import os
 import json

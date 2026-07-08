@@ -3,7 +3,6 @@ Module for configuration of scripts (data, clustering, CVI)
 """
 
 from typing import Any, Sequence, Union
-import json
 import numpy as np
 from pathlib import Path
 

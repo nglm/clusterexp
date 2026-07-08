@@ -4,7 +4,6 @@ import pandas as pd
 import numpy as np
 import os
 from pathlib import Path
-from scipy.io import arff
 
 from typing import List, Dict, Tuple, Union
 

@@ -7,7 +7,7 @@ from pycvi.vi import variation_information
 
 from typing import Tuple, List
 
-from .utils import interpret_dict, load_json
+from .utils import interpret_dict
 
 def f_quality(VI: float) -> float:
     """

@@ -4,8 +4,7 @@ import pytest
 
 from clusterexp.barton import (
     get_list_datasets_from_github, get_data_labels, arff_from_github,
-    load_data_from_github,
-    save_data_labels_from_github, URL_ROOT
+    load_data_from_github, URL_ROOT
 )
 
 def test_get_list_datasets_from_github():
