@@ -43,7 +43,9 @@ config1 = {
         "k_range" : [1, 25],
         "KMeans" : {
             "model" : "sklearn.cluster.KMeans",
-            "model_kw" : {},
+            "model_kw" : {
+                "random_state" : 221
+            },
             "fit_predict_kw" : {},
             "scaler": "sklearn.preprocessing.StandardScaler",
             "scaler_kw": {}
@@ -71,6 +73,7 @@ config1 = {
             "model": "kmedoids.KMedoids",
             "model_kw": {
                 "metric": "euclidean",
+                "random_state" : 221,
             },
             "fit_predict_kw": {},
             "scaler": "sklearn.preprocessing.StandardScaler",
@@ -125,6 +128,7 @@ def test_create_clusterings():
 
 def test_compute_CVI_values():
 
+    # ------- Test when re-computing everything --------
     dir = "test/test_compute_CVI_values"
     config_fname = f"{dir}/config.json"
     config2 = config1.copy()
@@ -148,3 +152,17 @@ def test_compute_CVI_values():
     assert isinstance(l_log_extracted, list)
     assert len(l_log_extracted) == 2
     assert l_log_extracted[-1] == log
+
+
+    # ------- Test when starting from previous log --------
+    log_exp = log["log_clustering"]["log_fname"]
+    log_bis = compute_CVI_values(config_fname, log_exp)
+
+    # Check that everything that isn't the log_fname or time is the same
+    log_bis_copy = log_bis.copy()
+    log_copy = log.copy()
+    del log_bis_copy["log_CVI"]["log_fname"]
+    del log_copy["log_CVI"]["log_fname"]
+    del log_bis_copy["log_CVI"]["time"]
+    del log_copy["log_CVI"]["time"]
+    assert log_bis_copy == log_copy
