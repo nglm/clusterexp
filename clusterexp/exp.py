@@ -1,12 +1,14 @@
 """Experiment orchestration for full pipeline."""
 
 import sys
+import argparse
 from datetime import datetime
 import numpy as np
 import time
 from pycvi.cluster import get_clustering, generate_all_clusterings
 from pycvi.compute_scores import compute_all_scores
 from pycvi.exceptions import SelectionError
+from pycvi.dist import time_series_metric_with_sklearn
 
 from .config import interpret_config, get_models_config, get_mandatory_keys
 from .data import find_datasets, filter_datasets, load_data_labels, is_time_series
@@ -185,6 +187,11 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
         # Load dataset, labels and true clustering
         data, labels = load_data_labels(f"{path_data}{d}")
+        if len(data.shape) == 2:
+            (N, D) = data.shape
+            T = 1
+        elif len(data.shape) == 3:
+            (N, T, D) = data.shape
         clustering_true = get_clustering(labels)
         k_true = len(np.unique(labels))
 
@@ -221,6 +228,13 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             else:
                 scaler = model_config['scaler'](**model_config['scaler_kw'])
 
+            # Special case if pycvi.dist.time_series_metric_with_sklearn
+            # is used somewhere in model_kw, we need to provide d and T
+            model_kw = model_config['model_kw'].copy()
+            for k, v in model_kw.items():
+                if v == time_series_metric_with_sklearn:
+                    model_kw[k] = time_series_metric_with_sklearn(data, d=D, T=T)
+
             # Generate all clusterings for the current dataset and model
             clusterings = generate_all_clusterings(
                 data=data,
@@ -228,7 +242,7 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
                 n_clusters_range=k_range,
                 ts_dist=ts_dist,
                 scaler=scaler,
-                model_kw=model_config['model_kw'],
+                model_kw=model_kw,
                 fit_predict_kw=model_config['fit_predict_kw'],
                 verbose=1,
             )
