@@ -153,14 +153,14 @@ def filter_experiments(
     """
     Filter experiments (and datasets) based on clustering quality.
 
-    Note that if both "best_q_true" and "best_q_best" are set to True, then only the experiments that are the best for both true and best qualities will be kept.
+    Note that if both "best_q_true" and "best_q_max" are set to True, then only the experiments that are the best for both true and best qualities will be kept.
 
-    If you want to be able to filter both based on the best q_best and q_true
-    then you should call this function twice, once with best_q_true=True and once with best_q_best=True, and then take the intersection of the two sets of kept experiments.
+    If you want to be able to filter both based on the best q_max and q_true
+    then you should call this function twice, once with best_q_true=True and once with best_q_max=True, and then take the intersection of the two sets of kept experiments.
 
     Possible constraints include:
     - `best_q_true_only` : bool, optional: Keep only the best clustering method per dataset based on the true quality (default: False)
-    - `best_q_best_only` : bool, optional: Keep only the best clustering method per dataset based on the best quality (default: False)
+    - `best_q_max_only` : bool, optional: Keep only the best clustering method per dataset based on the best quality (default: False)
     - `quality_true_min` : float, optional: Keep only experiments with a quality_true above a given threshold if given (default: 0)
     - `quality_best_min` : float, optional: Keep only experiments with a quality_best above a given threshold if given (default: 0)
 
@@ -179,7 +179,7 @@ def filter_experiments(
             - `kept_experiments`: a list of kept experiment filenames
             - `dropped_experiments`: a dictionary containing the dropped experiments with reasons for dropping
                 - `not_best_q_true`: a list of dropped experiment filenames whose true quality is not the best for the dataset
-                - `not_best_q_best`: a list of dropped experiment filenames whose best quality is not the best for the dataset
+                - `not_best_q_max`: a list of dropped experiment filenames whose best quality is not the best for the dataset
                 - `quality_true_min`: a list of dropped experiment filenames whose true quality is below the threshold
                 - `quality_best_min`: a list of dropped experiment filenames whose best quality is below the threshold
         - The second dictionary contains the kept and dropped datasets.
@@ -193,10 +193,10 @@ def filter_experiments(
 
     kept_exp = []
     best_q_true = []
-    best_q_best = []
+    best_q_max = []
     dropped_exp = {
         "not_best_q_true": [],
-        "not_best_q_best": [],
+        "not_best_q_max": [],
         "quality_min": [],
         "quality_true_min" : [],
         "quality_best_min" : [],
@@ -252,14 +252,14 @@ def filter_experiments(
                     keeps[i] = False
 
         # Find the best clustering for this dataset
-        best_q_best_idx = max(enumerate(qualities_best), key=lambda x: x[1])[0]
-        best_q_best.append(exps[best_q_best_idx])
+        best_q_max_idx = max(enumerate(qualities_best), key=lambda x: x[1])[0]
+        best_q_max.append(exps[best_q_max_idx])
 
         # Drop based on best best quality if constraint is given
-        if constraints.get("best_q_best_only", False):
+        if constraints.get("best_q_max_only", False):
             for i, exp in enumerate(exps):
-                if i != best_q_best_idx:
-                    dropped_exp["not_best_q_best"].append(exp)
+                if i != best_q_max_idx:
+                    dropped_exp["not_best_q_max"].append(exp)
                     keeps[i] = False
 
         # Now add kept experiments for this dataset to the kept_exp list
@@ -275,7 +275,7 @@ def filter_experiments(
 
     filtered_exp = {
         "best_q_true" : best_q_true,
-        "best_q_best" : best_q_best,
+        "best_q_max" : best_q_max,
         "kept_experiments": kept_exp,
         "dropped_experiments": dropped_exp,
     }

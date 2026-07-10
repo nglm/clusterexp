@@ -161,9 +161,9 @@ def test_filter_experiments():
     assert isinstance(filtered_exp["dropped_experiments"], dict)
     assert all(isinstance(v, list) for v in filtered_datasets.values())
 
-    # Check that best q_true and q_best are present
+    # Check that best q_true and q_max are present
     assert len(filtered_exp["best_q_true"]) == len(datasets)
-    assert len(filtered_exp["best_q_best"]) == len(datasets)
+    assert len(filtered_exp["best_q_max"]) == len(datasets)
 
     # Check that everything is kept when no constraints are given
     assert len(filtered_exp["kept_experiments"]) == len(exp)
@@ -187,9 +187,9 @@ def test_filter_experiments():
     assert isinstance(filtered_exp["dropped_experiments"], dict)
     assert all(isinstance(v, list) for v in filtered_datasets.values())
 
-    # Check that best q_true and q_best are present
+    # Check that best q_true and q_max are present
     assert len(filtered_exp["best_q_true"]) == len(datasets)
-    assert len(filtered_exp["best_q_best"]) == len(datasets)
+    assert len(filtered_exp["best_q_max"]) == len(datasets)
 
     # Check that all datasets are kept
     assert len(filtered_datasets["dropped_datasets"]) == 0

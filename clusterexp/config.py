@@ -177,7 +177,7 @@ CONFIG_CVI_BASE = {
         "quality_true_min" : 0.,
         "quality_best_min" : 0.,
         "best_q_true_only" : False,
-        "best_q_best_only" : False,
+        "best_q_max_only" : False,
         "Hartigan" : {
             "cvi" : "pycvi.cvi.Hartigan",
             "cvi_kw" : {
@@ -312,7 +312,7 @@ def get_mandatory_keys() -> dict:
                 "quality_true_min": (int, float),
                 "quality_best_min": (int, float),
                 "best_q_true_only": bool,
-                "best_q_best_only": bool,
+                "best_q_max_only": bool,
             },
             "lower" : {
                 "cvi": object,
@@ -387,7 +387,7 @@ def add_default(config:dict) -> dict:
     ``scaler``, ``scaler_kw`` if not present (but not ``model``,
     which is in any case mandatory).
 
-    For the general CVI config: Add ``quality_true_min``, ``quality_best_min``, ``seed``, ``best_q_true_only``, ``best_q_best_only`` if not present.
+    For the general CVI config: Add ``quality_true_min``, ``quality_best_min``, ``seed``, ``best_q_true_only``, ``best_q_max_only`` if not present.
 
     For each CVI model: Add ``cvi_kw`` and ``cvi_init_kw`` if not
     present (but not ``cvi``, which is in any case mandatory).
