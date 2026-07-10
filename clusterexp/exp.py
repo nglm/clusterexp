@@ -5,6 +5,8 @@ import argparse
 from datetime import datetime
 import numpy as np
 import time
+from pathlib import Path
+
 from pycvi.cluster import get_clustering, generate_all_clusterings
 from pycvi.compute_scores import compute_all_scores
 from pycvi.exceptions import SelectionError
@@ -61,6 +63,10 @@ def prepare_data(config_fname:str) -> dict:
     # ----------- Prepare current log files ------------------
     full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
     log_fname = f'{path_res}log-data-{full_date}'
+
+    p = Path(log_fname)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
     fout = open(f"{log_fname}.txt", 'wt')
     sys.stdout = fout
 
@@ -160,6 +166,10 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
     # ----------- Prepare current log files ---------------------
     full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
     log_fname = f'{path_res}log-clustering-{full_date}'
+
+    p = Path(log_fname)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
     fout = open(f"{log_fname}.txt", 'wt')
     sys.stdout = fout
 
@@ -199,6 +209,9 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
 
         data, ts_dist = is_time_series(data)
 
+        # Prepare main log to store VI and quality for each exp
+        log["log_clustering"][d] = {}
+
         for model_name, model_config in models_config["config_clustering"].items():
 
             print(f" ---------------- MODEL {model_name} ---------------- ")
@@ -219,6 +232,8 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             }
             # Add current experiment log filename to the main log file
             path_exp.append(log_exp_fname)
+            # Prepare main log to store VI and quality for each exp
+            log["log_clustering"][d][model_name] = {}
 
             # ----------- Generate all clusterings --------------
 
@@ -261,6 +276,9 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             log_exp["VIs"] = VIs
             log_exp["qualities"] = qualities
             log_exp["time"] = dt
+
+            log["log_clustering"][d][model_name]["VIs"] = VIs
+            log["log_clustering"][d][model_name]["qualities"] = qualities
 
             save_log(
                 f"{log_exp_fname}", log_exp,
@@ -362,6 +380,10 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
     # ----------- Prepare current log files ---------------------
     full_date = datetime.today().strftime('%Y-%m-%d--%H:%M:%S')
     log_fname = f'{path_res}log-CVI-{full_date}'
+
+    p = Path(log_fname)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
     fout = open(f"{log_fname}.txt", 'wt')
     sys.stdout = fout
 
@@ -456,6 +478,8 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
             }
             # Add current CVI log filename to the main log file
             path_CVI_files.append(log_cvi_fname)
+            # Prepare main log to store the selected k for each exp and CVI
+            log["log_CVI"][d][model_name] = {}
 
             for cvi, cvi_config in models_config["config_CVI"].items():
 
@@ -499,7 +523,7 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
                 }
 
                 # Update main log with the selected k for this CVI and dataset
-                log['log_CVI'][d][cvi] = k_selected
+                log['log_CVI'][d][model_name][cvi] = k_selected
 
             # ----------- Save experiment log ------------------
             save_log(

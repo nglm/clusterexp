@@ -285,5 +285,3 @@ def filter_experiments(
         "dropped_datasets": dropped_datasets,
     }
     return filtered_exp, filtered_datasets
-
-

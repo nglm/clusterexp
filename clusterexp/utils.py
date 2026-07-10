@@ -205,6 +205,9 @@ def interpret_dict(config:Union[dict, str]) -> dict:
     for config dict, see `interpret_config` (which will complement
     with default values).
 
+    This function will convert to int any key that is a string
+    containing only digits.
+
     Parameters
     ----------
     config : Union[dict, str]
@@ -223,20 +226,27 @@ def interpret_dict(config:Union[dict, str]) -> dict:
 
     interpreted_dict = {}
     for k, v in config.items():
+
+        # If the key is a digit, read it as an integer, else keep it as a string
+        if isinstance(k, str) and k.isdigit():
+            new_k = int(k)
+        else:
+            new_k = k
+
         # If the value is a string, try to interpret it as a class or function
         if isinstance(v, str):
             try:
-                interpreted_dict[k] = get_obj_from_string(v)
+                interpreted_dict[new_k] = get_obj_from_string(v)
             # If there was an error, it's probably because this was a regular
             # string, not a string representing a class or function
             except (ImportError, AttributeError, ValueError):
-                interpreted_dict[k] = v
+                interpreted_dict[new_k] = v
         # If the value is a dict, recursively interpret it
         elif isinstance(v, dict):
-            interpreted_dict[k] = interpret_dict(v)
+            interpreted_dict[new_k] = interpret_dict(v)
         # Else, assume that the format is correct and keep the value as is
         else:
-            interpreted_dict[k] = v
+            interpreted_dict[new_k] = v
 
     return interpreted_dict
 
@@ -466,3 +476,28 @@ def extract_log_from_text(fname) -> list[dict]:
     return l_logs
 
 
+def extract_keys_from_log(log: Union[dict, str]) -> dict:
+    """
+    Extract the keys from a log dictionary or a log JSON file.
+
+    Parameters
+    ----------
+    log : Union[dict, str]
+        Log dictionary or path to a log JSON file.
+
+    Returns
+    -------
+    dict
+        Dictionary containing the keys of the log dictionary, with nested
+        dictionaries for nested keys.
+    """
+    log = interpret_dict(log)
+
+    keys = {}
+
+    for k, v in log.items():
+        if isinstance(v, dict):
+            keys[k] = extract_keys_from_log(v)
+        else:
+            keys[k] = k
+    return keys
