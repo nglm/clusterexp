@@ -40,7 +40,7 @@ pandas==2.3.3
     # via aeon
 pillow==12.2.0
     # via matplotlib
-pycvi-lib==1.0.0
+pycvi-lib @ git+https://github.com/nglm/pycvi.git@85d5647157eab80e79ebc80eda69a031e7ab8e72
     # via clusterexp
 pyparsing==3.3.2
     # via matplotlib

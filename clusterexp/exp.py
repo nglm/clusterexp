@@ -178,6 +178,8 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
         "config_clustering": config['config_clustering'],
         "log_clustering": {
             "log_fname": log_fname,
+            "path_exp": [],
+            "model_names" : [],
         }}
 
     # Make the log visible in the output file
@@ -192,7 +194,6 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
     # ------------------ Load datasets ------------------------
     path_datasets = log_data['log_data']['kept_datasets']
 
-    path_exp = []
     for d in path_datasets:
 
         # Load dataset, labels and true clustering
@@ -231,7 +232,9 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
                 model_name: model_config,  # Add the config of this model
             }
             # Add current experiment log filename to the main log file
-            path_exp.append(log_exp_fname)
+            log["log_clustering"]["path_exp"].append(log_exp_fname)
+            # Add current model name
+            log["log_clustering"]["model_names"].append(model_name)
             # Prepare main log to store VI and quality for each exp
             log["log_clustering"][d][model_name] = {}
 
@@ -265,6 +268,8 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             # ----------- Compute VI and quality --------------
             VIs, qualities = compute_VI_quality(clustering_true, clusterings)
 
+            # Find k that maximise quality
+            k_q_max = max(qualities, key=qualities.get)
 
             # ----------- Finalize log and save --------------
             t_end_exp = time.time()
@@ -275,10 +280,12 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
             log_exp["clusterings"] = clusterings
             log_exp["VIs"] = VIs
             log_exp["qualities"] = qualities
+            log_exp["k_q_max"] = k_q_max
             log_exp["time"] = dt
 
             log["log_clustering"][d][model_name]["VIs"] = VIs
             log["log_clustering"][d][model_name]["qualities"] = qualities
+            log["log_clustering"][d][model_name]["k_q_max"] = k_q_max
 
             save_log(
                 f"{log_exp_fname}", log_exp,
@@ -290,7 +297,6 @@ def create_clusterings(config_fname:str, log_data_fname:Union[str, None] = None)
     dt = float(f"{t_end - t_start:.2f}")
     print(f"\n\nTotal execution time: {dt:.2f}s")
 
-    log['log_clustering']["path_exp"] = path_exp
     log['log_clustering']["time"] = dt
     save_log(
         f"{log_fname}.json", log,
@@ -393,6 +399,7 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
         "log_CVI": {
             "log_fname": log_fname,
             "CVI_names": CVI_names,
+            "path_CVI_files" : [],
         }}
 
     # Make the log visible in the output file
@@ -420,9 +427,6 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
 
     # Group experiments by dataset
     grouped_exp = group_exp_by_dataset(filtered_exp["kept_experiments"])
-
-    # ================ Create CVI files =====================
-    path_CVI_files = []
 
     # Note that we could avoid grouping by dataset but then it's bit less clean
     # and we would have to load the data and labels for each experiment
@@ -477,7 +481,7 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
                 "CVI_names": CVI_names,
             }
             # Add current CVI log filename to the main log file
-            path_CVI_files.append(log_cvi_fname)
+            log["log_CVI"]["path_CVI_files"].append(log_cvi_fname)
             # Prepare main log to store the selected k for each exp and CVI
             log["log_CVI"][d][model_name] = {}
 
@@ -539,7 +543,6 @@ def compute_CVI_values(config_fname:str, log_clustering_fname:Union[str, None] =
 
     log['log_CVI'].update(filtered_exp)
     log['log_CVI'].update(filtered_datasets)
-    log['log_CVI']["path_CVI_files"] = path_CVI_files
     log['log_CVI']["time"] = dt
     save_log(
         f"{log_fname}.json", log,

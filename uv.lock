@@ -41,7 +41,7 @@ dev = [
 requires-dist = [
     { name = "kmedoids", specifier = ">=0.5.5" },
     { name = "matplotlib", specifier = ">=3.10.9" },
-    { name = "pycvi-lib", specifier = ">=1.0.0" },
+    { name = "pycvi-lib", git = "https://github.com/nglm/pycvi.git?branch=docs" },
     { name = "scikit-learn", specifier = ">=1.7.2" },
 ]
 
@@ -380,14 +380,10 @@ wheels = [
 
 [[package]]
 name = "pycvi-lib"
-version = "1.0.0"
-source = { registry = "https://pypi.org/simple" }
+version = "1.0.1"
+source = { git = "https://github.com/nglm/pycvi.git?branch=docs#85d5647157eab80e79ebc80eda69a031e7ab8e72" }
 dependencies = [
     { name = "aeon" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/81/bd/96262d4dbef18059e80603dc262c65d5c82f69d9bb3caa6bf051b7bc4fdd/pycvi_lib-1.0.0.tar.gz", hash = "sha256:23f406b8a86f6d0bd71abea083c69fa8c99828d460d63be5469e6305db88d205", size = 330152, upload-time = "2026-06-25T13:03:32.554Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/b9/be/e5a07cd3e205f861212b4059c52005439a5bdacd4f373f547ca9d178bfe6/pycvi_lib-1.0.0-py3-none-any.whl", hash = "sha256:6a16c866bba43911410ffc9f3a6a815ad689923a4eae68e317e19eff9632e21c", size = 338965, upload-time = "2026-06-25T13:03:24.571Z" },
 ]
 
 [[package]]

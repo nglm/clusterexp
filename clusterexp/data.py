@@ -227,12 +227,12 @@ def load_data_labels(
     fname_data: str,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
-    Load data and labels from CSV files.
+    Load data and labels from .csv, .tsv or .npy files.
 
     Parameters
     ----------
     fname_data : str
-        Path to the data file.
+        Full filename to the data file (i.e., including the `_data.ext`)
 
     Returns
     -------

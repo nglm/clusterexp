@@ -171,6 +171,9 @@ def test_interpret_dict():
     assert config_clustering_interpreted["config_clustering"]["KMeans"]["model"] == KMeans
 
 def test_extract_keys_from_log():
+
+  # Test with a short log
+
     log =   {
         "log_filename": "test/test_create_clusterings/log-clustering-2026-07-08--10:01:15.json",
         "config_clustering": {

@@ -162,7 +162,7 @@ def filter_experiments(
     - `best_q_true_only` : bool, optional: Keep only the best clustering method per dataset based on the true quality (default: False)
     - `best_q_max_only` : bool, optional: Keep only the best clustering method per dataset based on the best quality (default: False)
     - `quality_true_min` : float, optional: Keep only experiments with a quality_true above a given threshold if given (default: 0)
-    - `quality_best_min` : float, optional: Keep only experiments with a quality_best above a given threshold if given (default: 0)
+    - `quality_max_min` : float, optional: Keep only experiments with a quality_max above a given threshold if given (default: 0)
 
     Parameters
     ----------
@@ -181,7 +181,7 @@ def filter_experiments(
                 - `not_best_q_true`: a list of dropped experiment filenames whose true quality is not the best for the dataset
                 - `not_best_q_max`: a list of dropped experiment filenames whose best quality is not the best for the dataset
                 - `quality_true_min`: a list of dropped experiment filenames whose true quality is below the threshold
-                - `quality_best_min`: a list of dropped experiment filenames whose best quality is below the threshold
+                - `quality_max_min`: a list of dropped experiment filenames whose best quality is below the threshold
         - The second dictionary contains the kept and dropped datasets.
             - `kept_datasets`: a list of kept dataset names
             - `dropped_datasets`: a list of dropped dataset names
@@ -197,9 +197,8 @@ def filter_experiments(
     dropped_exp = {
         "not_best_q_true": [],
         "not_best_q_max": [],
-        "quality_min": [],
         "quality_true_min" : [],
-        "quality_best_min" : [],
+        "quality_max_min" : [],
     }
 
     # Group experiments by dataset {dataset: [exp_fnames]}
@@ -210,7 +209,7 @@ def filter_experiments(
 
         # Qualities for true and best clusterings for this dataset
         qualities_true = []
-        qualities_best = []
+        qualities_max = []
         keeps = []
 
         # Go through all experiments for this dataset, find their VIs
@@ -222,19 +221,20 @@ def filter_experiments(
             # Load the experiment
             exp_log = interpret_dict(exp)
             k_true = exp_log["k_true"]
+            k_q_max = exp_log["k_q_max"]
 
             # Find true and best qualities for this experiment
             quality_true = exp_log["qualities"][k_true]
-            quality_best = max(exp_log["qualities"].values())
+            quality_max = exp_log["qualities"][k_q_max]
             qualities_true.append(quality_true)
-            qualities_best.append(quality_best)
+            qualities_max.append(quality_max)
 
             # Drop based on quality thresholds if constraint is given
             if quality_true < constraints.get("quality_true_min", 0):
                 dropped_exp["quality_true_min"].append(exp)
                 keep = False
-            if quality_best < constraints.get("quality_best_min", 0):
-                dropped_exp["quality_best_min"].append(exp)
+            if quality_max < constraints.get("quality_max_min", 0):
+                dropped_exp["quality_max_min"].append(exp)
                 keep = False
 
             keeps.append(keep)
@@ -252,7 +252,7 @@ def filter_experiments(
                     keeps[i] = False
 
         # Find the best clustering for this dataset
-        best_q_max_idx = max(enumerate(qualities_best), key=lambda x: x[1])[0]
+        best_q_max_idx = max(enumerate(qualities_max), key=lambda x: x[1])[0]
         best_q_max.append(exps[best_q_max_idx])
 
         # Drop based on best best quality if constraint is given
