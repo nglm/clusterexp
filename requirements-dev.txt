@@ -5,33 +5,21 @@ aeon==1.4.0
     # via pycvi-lib
 colorama==0.4.6 ; sys_platform == 'win32'
     # via pytest
-contourpy==1.3.3
-    # via matplotlib
-cycler==0.12.1
-    # via matplotlib
 deprecated==1.3.1
     # via aeon
-fonttools==4.63.0
-    # via matplotlib
 iniconfig==2.3.0
     # via pytest
 joblib==1.5.3
     # via scikit-learn
-kiwisolver==1.5.0
-    # via matplotlib
 kmedoids==0.5.5
     # via clusterexp
 llvmlite==0.46.0
     # via numba
-matplotlib==3.10.9
-    # via clusterexp
 numba==0.63.1
     # via aeon
 numpy==2.3.5
     # via
     #   aeon
-    #   contourpy
-    #   matplotlib
     #   numba
     #   pandas
     #   scikit-learn
@@ -39,25 +27,18 @@ numpy==2.3.5
 packaging==26.2
     # via
     #   aeon
-    #   matplotlib
     #   pytest
 pandas==2.3.3
     # via aeon
-pillow==12.2.0
-    # via matplotlib
 pluggy==1.6.0
     # via pytest
 pycvi-lib @ git+https://github.com/nglm/pycvi.git@85d5647157eab80e79ebc80eda69a031e7ab8e72
     # via clusterexp
 pygments==2.20.0
     # via pytest
-pyparsing==3.3.2
-    # via matplotlib
 pytest==9.0.3
 python-dateutil==2.9.0.post0
-    # via
-    #   matplotlib
-    #   pandas
+    # via pandas
 pytz==2026.2
     # via pandas
 scikit-learn==1.7.2
