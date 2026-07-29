@@ -241,6 +241,7 @@ def save_data_labels_from_github(
     dataset_names: List[str],
     path_data: str = "./",
     data_source: str = "artificial",
+    save_kwargs: dict = {},
 ) -> None:
     """
     Save data and labels from GitHub to CSV files.
@@ -266,12 +267,12 @@ def save_data_labels_from_github(
         data, labels, meta = get_data_labels(
             fname=d, url=f"{URL_ROOT}{data_source}/"
         )
-        # labels = labels.astype(float)
-        pd.DataFrame(labels).to_csv(
-            f"{path_data}{d}_labels.csv".replace(".arff", ""),
-            header=False, index=False,
-        )
-        pd.DataFrame(data).to_csv(
+
+        np.savetxt(
             f"{path_data}{d}_data.csv".replace(".arff", ""),
-            header=False, index=False,
+            data, **save_kwargs
+        )
+        np.savetxt(
+            f"{path_data}{d}_labels.csv".replace(".arff", ""),
+            labels, **save_kwargs
         )

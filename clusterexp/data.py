@@ -225,20 +225,38 @@ def find_datasets(
 
 def load_data_labels(
     fname_data: str,
-) -> Tuple[np.ndarray, np.ndarray]:
+    load_args: dict = {},
+) -> Tuple[DataArray, LabelArray]:
     """
     Load data and labels from .csv, .tsv or .npy files.
+
+    Load classification / clustering datasets with datapoints (X) saved
+    as a .csv if X is a 2D array, and as a npy otherwise. Labels (y)
+    files ends with the same extension as its corresponding X (so .csv
+    or .npy). The filename convention is
+    - X: `{dataset_name}_data.{ext}`
+    - y: `{dataset_name}_labels.{ext}`
+
+    with matching {dataset_name} and {ext} for a given (X, y) pair.
 
     Parameters
     ----------
     fname_data : str
         Full filename to the data file (i.e., including the `_data.ext`)
+    load_args : dict[str, Any], default={}
+        Extra keyword arguments forwarded to ``numpy.load`` or
+        ``numpy.loadtxt``.
 
     Returns
     -------
-    Tuple[np.ndarray, np.ndarray]
+    Tuple[DataArray, LabelArray]
         Data array and labels array loaded from matching ``*_data.ext`` and
         ``*_labels.ext`` files, where `ext` can be "csv", "tsv", or "npy".
+
+    Raises
+    ------
+    ValueError
+        If ``fname_data`` does not use a supported extension.
     """
     # We could directly replace _data without the extension but it's a bit less
     # safe, in case the pattern "_data" appears somewhere else in the path
@@ -246,12 +264,12 @@ def load_data_labels(
     fname_labels = fname_data.replace(f"_data{ext}", f"_labels{ext}")
 
     if ext in [".npy", "npy"]:
-        data = np.load(fname_data)
-        labels = np.load(fname_labels)
+        data = np.load(fname_data, **load_args)
+        labels = np.load(fname_labels, **load_args)
     elif ext in [".csv", "csv", ".tsv", "tsv"]:
         ext = ext.lstrip(".")
-        data = pd.read_csv(fname_data, header=None).to_numpy()
-        labels = pd.read_csv(fname_labels, header=None).to_numpy()
+        data = np.loadtxt(fname_data, **load_args)
+        labels = np.loadtxt(fname_labels, **load_args)
     else:
         raise ValueError(f"Unsupported extension: {ext}. Use 'csv', 'tsv' or 'npy'.")
     return data, labels
