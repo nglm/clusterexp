@@ -6,12 +6,12 @@ This module assumes that the data is already formatted as expected, with a file 
 Functions defined here are general to all datasets.
 """
 
-import pandas as pd
 import numpy as np
+from numpy.typing import NDArray
 import os
 from pathlib import Path
 
-from typing import List, Dict, Tuple, Union
+from typing import List, Dict, Tuple, Union, Any
 
 # def print_heads(
 #     fnames: List[str],
@@ -116,6 +116,8 @@ from typing import List, Dict, Tuple, Union
 #             print(meta)
 #     return summary
 
+DataArray = NDArray[np.float64]
+LabelArray = NDArray[np.int_]
 
 def get_list_datasets(fname: str) -> List[str]:
     """
@@ -273,6 +275,64 @@ def load_data_labels(
     else:
         raise ValueError(f"Unsupported extension: {ext}. Use 'csv', 'tsv' or 'npy'.")
     return data, labels
+
+
+def save_data_labels(
+    X: DataArray,
+    y: LabelArray,
+    fnames_root: str,
+    force_npy: bool = False,
+    save_args: dict[str, Any] = {},
+) -> None:
+    """
+    Save data and labels to .csv or .npy files.
+
+    Save classification / clustering datasets with datapoints (X) saved
+    as a .csv if X is a 2D array, and as a npy otherwise. Labels (y)
+    files ends with the same extension as its corresponding X (so .csv
+    or .npy). The filename convention is
+    - X: `{dataset_name}_data.{ext}`
+    - y: `{dataset_name}_labels.{ext}`
+
+    with matching {dataset_name} and {ext} for a given (X, y) pair.
+
+    Here `fnames_root` should be `path/to/dataset_name`, on which the final filenames of X and y are based.
+
+    Parameters
+    ----------
+    X : DataArray
+        Data array to save.
+    y : LabelArray
+        Label array to save alongside ``X``.
+    fnames_root : str
+        Output path prefix, excluding the ``_data`` or ``_labels`` suffix and
+        file extension.
+    force_npy : bool, default=False
+        Whether to always save with NumPy's binary ``.npy`` format.
+    save_args : dict[str, Any], default={}
+        Extra keyword arguments forwarded to ``numpy.save`` or
+        ``numpy.savetxt``.
+
+    Returns
+    -------
+    None
+        This function writes files to disk and returns nothing.
+    """
+    p = Path(fnames_root)
+    p.parent.mkdir(parents=True, exist_ok=True)
+
+    shape = X.shape
+    if len(shape) > 2 or force_npy:
+        ext = "npy"
+    else:
+        ext = "csv"
+
+    if ext == "npy":
+        np.save(f"{fnames_root}_data.{ext}", X, **save_args)
+        np.save(f"{fnames_root}_labels.{ext}", y, **save_args)
+    else:
+        np.savetxt(f"{fnames_root}_data.{ext}", X, **save_args)
+        np.savetxt(f"{fnames_root}_labels.{ext}", y, **save_args)
 
 def filter_datasets(
         datasets:List[str],
